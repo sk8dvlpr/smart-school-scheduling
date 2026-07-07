@@ -1,0 +1,97 @@
+#-------------------------
+# Operating System
+#-------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+*~
+.directory
+.Trash-*
+
+#-------------------------
+# Secrets & local environment
+#-------------------------
+.env
+.env.*
+!.env.example
+auth.json
+
+#-------------------------
+# PHP / Composer
+#-------------------------
+/vendor/
+composer.phar
+
+#-------------------------
+# CodeIgniter writable (runtime only)
+#-------------------------
+/writable/cache/*
+!/writable/cache/index.html
+/writable/logs/*
+!/writable/logs/index.html
+/writable/session/*
+!/writable/session/index.html
+/writable/uploads/*
+!/writable/uploads/index.html
+/writable/debugbar/*
+!/writable/debugbar/index.html
+php_errors.log
+
+#-------------------------
+# Tests & build artifacts
+#-------------------------
+/tests/coverage*
+/build/
+/results/
+.phpunit.cache/
+phpunit.xml
+/phpunit
+
+#-------------------------
+# IDE & editor
+#-------------------------
+.idea/
+*.iml
+.vscode/
+*.sublime-workspace
+*.sublime-project
+.phpintel
+.php-version
+/nbproject/
+/nbbuild/
+/dist/
+/nbdist/
+/nbactions.xml
+/nbconfiguration.xml
+/.nb-gradle/
+
+#-------------------------
+# Tooling caches (regenerable)
+#-------------------------
+.gitnexus/*
+!.gitnexus/run.cjs
+!.gitnexus/.gitignore
+.rtk/
+.cursor/
+
+#-------------------------
+# Legacy CI4 starter paths
+#-------------------------
+/user_guide_src/build/*
+/user_guide_src/cilexer/build/*
+/user_guide_src/cilexer/dist/*
+/user_guide_src/cilexer/pycilexer.egg-info/*
+_modules/*
+/api/
+.vagrant
+Vagrantfile
