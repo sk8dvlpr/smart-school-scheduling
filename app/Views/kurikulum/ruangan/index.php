@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<?= view('components/datatables_styles') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -38,8 +38,7 @@
             </div>
         <?php endif; ?>
 
-        <div class="table-responsive">
-            <table id="dataTable" class="table table-striped table-hover align-middle">
+        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
@@ -59,7 +58,7 @@
                         <td class="fw-medium"><?= esc($row['nama']) ?></td>
                         <td class="text-capitalize">
                             <?php if ($row['tipe'] == 'kelas'): ?>
-                                <span class="badge bg-primary">Kelas</span>
+                                <span class="badge bg-primary">Rombel</span>
                             <?php else: ?>
                                 <span class="badge bg-info text-dark">Laboratorium</span>
                             <?php endif; ?>
@@ -82,7 +81,6 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -115,13 +113,13 @@
                     
                     <div class="mb-3">
                         <label class="form-label">Nama Ruangan</label>
-                        <input type="text" class="form-control" name="nama" id="nama" placeholder="Contoh: Ruang Kelas X TKJ 1" required>
+                        <input type="text" class="form-control" name="nama" id="nama" placeholder="Contoh: Ruang Rombel X TKJ 1" required>
                     </div>
                     
                     <div class="mb-3">
                         <label class="form-label">Tipe Ruangan</label>
                         <select class="form-select" name="tipe" id="tipe" required onchange="toggleJurusan(this.value)">
-                            <option value="kelas">Ruang Kelas (Homeroom)</option>
+                            <option value="kelas">Ruang Rombel (Homeroom)</option>
                             <option value="lab">Laboratorium / Bengkel</option>
                         </select>
                     </div>
@@ -148,16 +146,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<?= view('components/datatables_scripts') ?>
 <script>
     $(document).ready(function() {
-        $('#dataTable').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-            },
-            responsive: true
-        });
+        $('#dataTable').DataTable();
     });
 
     const modal = new bootstrap.Modal(document.getElementById('formModal'));

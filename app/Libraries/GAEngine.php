@@ -3,8 +3,8 @@
 namespace App\Libraries;
 
 /**
- * GA optimizer v3.1 — optimizes SC-1..SC-11 (SC-7 via guru_preferensi,
- * SC-9 guru lock) over a CSP-seeded population.
+ * GA optimizer v3.1 — optimizes SC-1..SC-12 (SC-7 via guru_preferensi,
+ * SC-9 guru lock, SC-12 lab day packing) over a CSP-seeded population.
  *
  * Fitness = 1 / (1 + Σ Wi × Penalty_i), each penalty normalized to ~0..1.
  * Tournament selection, order/uniform crossover, swap-with-repair mutation,
@@ -85,6 +85,7 @@ class GAEngine
             'sc9'  => (float) ($data['sc9_teacher_continuity'] ?? 4),
             'sc10' => (float) ($data['sc10_first_slot_rotation'] ?? 3),
             'sc11' => (float) ($data['sc11_lab_load_balance'] ?? 6),
+            'sc12' => (float) ($data['sc_lab_day_pack'] ?? 7),
             'lab_pref' => (float) ($data['sc_lab_preference'] ?? 5),
         ];
 
@@ -613,6 +614,9 @@ class GAEngine
         }
         $sc11 /= $jurCount;
 
+        // SC-12 pack lab classes (jurusan+tingkat) onto fewer parallel-filled days
+        $sc12 = SchedulingContext::labDayPackPenalty($schedule, $this->units, $this->labPoolByJurusan);
+
         // SC-9: teacher continuity per kelas_mapel (one guru per class-subject pair)
         $sc9 = 0.0;
         $kmGurus = [];
@@ -680,6 +684,7 @@ class GAEngine
             'sc9'  => $sc9,
             'sc10' => $sc10,
             'sc11' => $sc11,
+            'sc12' => $sc12,
             'lab_pref' => $labPref,
         ];
     }

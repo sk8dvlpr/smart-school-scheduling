@@ -53,6 +53,7 @@ Ini **diusahakan** oleh sistem, tapi boleh dikorbankan jika tidak ada solusi yan
 | **SC-9** | Guru yang sama tetap mengajar kelas itu (kontinuitas) | Rendah |
 | **SC-10** | Mapel di jam pertama tidak monoton setiap hari | Rendah |
 | **SC-11** | Pemakaian lab merata antar jurusan | Sedang |
+| **SC-12** | Packing lab paralel se-tingkat+jurusan di hari yang sama | Sedang |
 
 ---
 

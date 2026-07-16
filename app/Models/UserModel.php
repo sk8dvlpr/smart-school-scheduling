@@ -17,6 +17,7 @@ class UserModel extends Model
         'no_telp',
         'password',
         'role',
+        'is_admin',
         'must_change_password',
         'is_active',
     ];
@@ -29,6 +30,23 @@ class UserModel extends Model
     ];
     protected $beforeInsert     = ['hashPassword'];
     protected $beforeUpdate     = ['hashPassword'];
+
+    public static function sessionIsKurikulumAdmin(): bool
+    {
+        return session()->get('role') === 'kurikulum'
+            && (int) session()->get('is_admin') === 1;
+    }
+
+    /**
+     * Kurikulum with is_admin=1 must not teach.
+     */
+    public function hasTeachingProfile(int $userId): bool
+    {
+        return $this->db->table('guru')
+            ->where('user_id', $userId)
+            ->where('deleted_at IS NULL')
+            ->countAllResults() > 0;
+    }
 
     protected function hashPassword(array $data): array
     {

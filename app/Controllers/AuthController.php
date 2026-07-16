@@ -18,7 +18,9 @@ class AuthController extends BaseController
             return $this->redirectByRole(session()->get('role'));
         }
 
-        return view('auth/login');
+        return view('auth/login', [
+            'branding' => \App\Libraries\BrandingService::get(),
+        ]);
     }
 
     public function login(): RedirectResponse
@@ -51,12 +53,21 @@ class AuthController extends BaseController
             $guruId = (int) $guru['id'];
         }
 
+        $isAdmin = (int) ($user['is_admin'] ?? 0) === 1
+            && ($user['role'] ?? '') === 'kurikulum';
+
+        // Admin kurikulum never uses teaching session context.
+        if ($isAdmin) {
+            $guruId = null;
+        }
+
         session()->regenerate();
         session()->set([
             'user_id'              => (int) $user['id'],
             'role'                 => $user['role'],
             'nama'                 => $user['nama'],
             'guru_id'              => $guruId,
+            'is_admin'             => $isAdmin ? 1 : 0,
             'must_change_password' => (int) $user['must_change_password'],
             'logged_in'            => true,
         ]);

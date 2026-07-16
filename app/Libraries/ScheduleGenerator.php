@@ -29,11 +29,11 @@ class ScheduleGenerator
             ->where('ruangan_id IS NULL')
             ->countAllResults();
         $results[] = [
-            'rule'    => 'Homeroom Kelas',
+            'rule'    => 'Homeroom Rombel',
             'status'  => $kelasTanpaRoom === 0,
             'message' => $kelasTanpaRoom === 0
-                ? 'Semua kelas memiliki ruangan (Homeroom).'
-                : "$kelasTanpaRoom kelas belum di-assign ruangan.",
+                ? 'Semua rombel memiliki ruangan (Homeroom).'
+                : "$kelasTanpaRoom rombel belum di-assign ruangan.",
         ];
 
         $kelasTanpaMapel = $db->table('kelas')
@@ -46,11 +46,11 @@ class ScheduleGenerator
             ->get()
             ->getResultArray();
         $results[] = [
-            'rule'    => 'Kurikulum Kelas (kelas_mapel)',
+            'rule'    => 'Kurikulum Rombel (kelas_mapel)',
             'status'  => count($kelasTanpaMapel) === 0,
             'message' => count($kelasTanpaMapel) === 0
-                ? 'Setiap kelas memiliki minimal 1 kelas_mapel.'
-                : count($kelasTanpaMapel) . ' kelas belum punya kelas_mapel: '
+                ? 'Setiap rombel memiliki minimal 1 kelas_mapel.'
+                : count($kelasTanpaMapel) . ' rombel belum punya kelas_mapel: '
                     . implode(', ', array_slice(array_column($kelasTanpaMapel, 'nama'), 0, 5))
                     . (count($kelasTanpaMapel) > 5 ? '...' : ''),
         ];
@@ -68,11 +68,11 @@ class ScheduleGenerator
             ->get()
             ->getResultArray();
         $results[] = [
-            'rule'    => 'Beban JP Kelas ≤ Kapasitas Mingguan',
+            'rule'    => 'Beban JP Rombel ≤ Kapasitas Mingguan',
             'status'  => count($overCapKelas) === 0,
             'message' => count($overCapKelas) === 0
-                ? "Semua kelas ≤ {$weeklyCap} JP/minggu."
-                : count($overCapKelas) . ' kelas melebihi kapasitas mingguan (' . $weeklyCap . ' JP).',
+                ? "Semua rombel ≤ {$weeklyCap} JP/minggu."
+                : count($overCapKelas) . ' rombel melebihi kapasitas mingguan (' . $weeklyCap . ' JP).',
         ];
 
         $mapelDemand = [];
@@ -130,7 +130,7 @@ class ScheduleGenerator
             'rule'    => 'Kesesuaian Jurusan (HC-7)',
             'status'  => count($kejuruanMismatch) === 0,
             'message' => count($kejuruanMismatch) === 0
-                ? 'Semua mapel kejuruan sesuai jurusan kelas.'
+                ? 'Semua mapel kejuruan sesuai jurusan rombel.'
                 : count($kejuruanMismatch) . ' ketidaksesuaian jurusan ditemukan.',
         ];
 
@@ -506,6 +506,7 @@ class ScheduleGenerator
             'sc9_teacher_continuity'    => (float) ($config['sc9_teacher_continuity'] ?? 4),
             'sc10_first_slot_rotation'  => (float) ($config['sc10_first_slot_rotation'] ?? 3),
             'sc11_lab_load_balance'     => (float) ($config['sc11_lab_load_balance'] ?? 6),
+            'sc_lab_day_pack'           => (float) ($config['sc_lab_day_pack'] ?? 7),
             'sc_lab_preference'         => (float) ($config['sc_lab_preference'] ?? 5),
         ]));
 
@@ -634,6 +635,7 @@ class ScheduleGenerator
                     'kelas_id'         => $kelasId,
                     'mapel_id'         => $mapelId,
                     'jurusan_id'       => (int) $kelas['jurusan_id'],
+                    'tingkat'          => (string) ($kelas['tingkat'] ?? ''),
                     'unit_index'       => $i,
                     'butuh_lab'        => (int) ($km['butuh_lab'] ?? 0),
                     'lab_id'           => $km['lab_id'] ?? null, // preferred lab (kelas_mapel.lab_id)
@@ -752,8 +754,8 @@ class ScheduleGenerator
             'lab_conflict'        => 'Konflik jadwal lab (HC-3)',
             'no_slot'             => 'Tidak ada slot tersedia',
             'no_guru_eligible'    => 'Tidak ada guru eligible (HC-4/HC-6/HC-7)',
-            'class_conflict'      => 'Konflik slot kelas (HC-2)',
-            'class_over_capacity' => 'Kapasitas kelas terlampaui (HC-5)',
+            'class_conflict'      => 'Konflik slot rombel (HC-2)',
+            'class_over_capacity' => 'Kapasitas rombel terlampaui (HC-5)',
             'timeout'             => 'Waktu habis saat penjadwalan',
             'not_attempted'       => 'Belum dicoba',
         ];
@@ -776,9 +778,9 @@ class ScheduleGenerator
     {
         return match ($reason) {
             'teacher_conflict'    => 'Tambah guru cadangan (guru_mapel) untuk mapel ini atau naikkan csp_max_attempts.',
-            'lab_conflict'        => 'Banyak kelas berbagi lab yang sama — kurangi JP mapel lab, tambah lab, atau bagi kelas ke lab berbeda.',
+            'lab_conflict'        => 'Banyak rombel berbagi lab yang sama — kurangi JP mapel lab, tambah lab, atau bagi rombel ke lab berbeda.',
             'no_guru_eligible'    => 'Tambah guru_mapel, naikkan max_jam_per_minggu, atau hapus guru_hari_blokir.',
-            'class_over_capacity' => 'Total JP kelas melebihi kapasitas mingguan — kurangi jam_per_minggu kelas_mapel.',
+            'class_over_capacity' => 'Total JP rombel melebihi kapasitas mingguan — kurangi jam_per_minggu kelas_mapel.',
             'timeout'             => 'Naikkan timeout_seconds atau kurangi csp_max_attempts.',
             default               => 'Generate ulang dengan parameter solver yang lebih agresif.',
         };
@@ -816,7 +818,7 @@ class ScheduleGenerator
 
         $report = [];
         foreach ($counts as $kelasId => $days) {
-            $nama = $kelasNames[$kelasId] ?? ('Kelas #' . $kelasId);
+            $nama = $kelasNames[$kelasId] ?? ('Rombel #' . $kelasId);
             $entry = [];
             $total = 0;
             $capTotal = 0;

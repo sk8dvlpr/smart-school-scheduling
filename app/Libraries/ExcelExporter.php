@@ -163,9 +163,9 @@ class ExcelExporter
                                 $text .= "\nLab: " . $cell['ruangan_kode'];
                             }
                         } elseif ($viewType === 'guru') {
-                            $text .= "\nKelas: " . $cell['kelas_nama'] . "\nRuang: " . $cell['ruangan_kode'];
+                            $text .= "\nRombel: " . $cell['kelas_nama'] . "\nRuang: " . $cell['ruangan_kode'];
                         } elseif ($viewType === 'ruangan') {
-                            $text .= "\nKelas: " . $cell['kelas_nama'] . "\n" . $cell['guru_nama'];
+                            $text .= "\nRombel: " . $cell['kelas_nama'] . "\n" . $cell['guru_nama'];
                         }
                         $sheet->setCellValue($col . $row, "JP {$slot['jam_ke']}\n{$timeLabel}\n{$text}");
                         $hexColor = str_replace('#', '', $cell['mapel_warna'] ?? '');

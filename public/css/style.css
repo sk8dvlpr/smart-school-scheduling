@@ -93,6 +93,12 @@ body.dark-mode {
     position: absolute;
     top: 0;
     right: 0;
+    /* Ruang di bawah supaya pagination/aksi tidak mepet tepi viewport */
+    padding-bottom: 4rem;
+}
+
+#content > .p-4 {
+    padding-bottom: 3rem !important;
 }
 
 /* Navbar */
@@ -145,6 +151,50 @@ body.dark-mode {
 
 .dark-mode .alert {
     border-color: #334155;
+}
+
+/* DataTables — ruang klik + pastikan kontrol tidak mepet tepi bawah */
+.dataTables_wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding-bottom: 0.75rem;
+}
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    position: relative;
+    z-index: 2;
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+    padding-top: 0.25rem;
+}
+.dataTables_wrapper .dataTables_paginate .pagination {
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button,
+.dataTables_wrapper .dataTables_paginate .page-item,
+.dataTables_wrapper .dataTables_paginate .page-link {
+    pointer-events: auto !important;
+    cursor: pointer;
+    /* Target klik lebih nyaman di dekat tepi layar */
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.dataTables_wrapper .dataTables_paginate .page-item.disabled .page-link,
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    cursor: default;
+    pointer-events: none !important;
+}
+.dataTables_wrapper .dataTables_length select {
+    pointer-events: auto !important;
+}
+.card-body:has(.dataTables_wrapper) {
+    padding-bottom: 1.5rem;
 }
 
 /* ponytail: old v2 timetable-break dark rule removed — superseded by v3 .dark-mode .tt-td-break */

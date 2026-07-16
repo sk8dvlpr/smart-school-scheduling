@@ -144,7 +144,11 @@ foreach ($hari as $h) {
                     ?>
                         <th class="tt-th-day">
                             <?= esc($h['nama']) ?>
-                            <span class="badge bg-white bg-opacity-25 ms-1" style="font-size:0.65rem;"><?= $jpCnt ?> JP</span>
+                            <?php if ($isExport): ?>
+                                <br><span style="font-size:7px;font-weight:normal;opacity:0.9;"><?= $jpCnt ?> JP</span>
+                            <?php else: ?>
+                                <span class="badge bg-white bg-opacity-25 ms-1" style="font-size:0.65rem;"><?= $jpCnt ?> JP</span>
+                            <?php endif; ?>
                         </th>
                     <?php endforeach; ?>
                 </tr>
@@ -177,9 +181,17 @@ foreach ($hari as $h) {
                         <?php if ($refTipe === 'jp'): ?>
                             <span class="tt-jp-num"><?= (int) ($ref['jam_ke'] ?? $row + 1) ?></span>
                         <?php elseif ($refTipe === 'istirahat'): ?>
-                            <i class="bi bi-cup-hot tt-icon-break"></i>
+                            <?php if ($isExport): ?>
+                                <span class="tt-jp-num" style="font-size:7px;color:#94a3b8;">—</span>
+                            <?php else: ?>
+                                <i class="bi bi-cup-hot tt-icon-break"></i>
+                            <?php endif; ?>
                         <?php else: ?>
-                            <i class="bi bi-flag tt-icon-kegiatan"></i>
+                            <?php if ($isExport): ?>
+                                <span class="tt-jp-num" style="font-size:7px;color:#818cf8;">★</span>
+                            <?php else: ?>
+                                <i class="bi bi-flag tt-icon-kegiatan"></i>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </td>
 
@@ -277,11 +289,11 @@ foreach ($hari as $h) {
                                         <?php if ($viewType === 'kelas'): ?>
                                             <div class="tt-subject-sub"><?= esc($cell['guru_nama']) ?></div>
                                             <?php if (($cell['ruangan_tipe'] ?? '') === 'lab'): ?>
-                                                <div class="tt-lab-badge"><i class="bi bi-door-open-fill"></i> <?= esc($cell['ruangan_kode']) ?></div>
+                                                <div class="tt-lab-badge"><?= $isExport ? '' : '<i class="bi bi-door-open-fill"></i> ' ?><?= esc($cell['ruangan_kode']) ?></div>
                                             <?php endif; ?>
                                         <?php elseif ($viewType === 'guru'): ?>
                                             <div class="tt-subject-sub"><?= esc($cell['kelas_nama']) ?></div>
-                                            <div class="tt-subject-room"><i class="bi bi-geo-alt-fill"></i> <?= esc($cell['ruangan_kode'] ?? $cell['ruangan_nama'] ?? '-') ?></div>
+                                            <div class="tt-subject-room"><?= $isExport ? '' : '<i class="bi bi-geo-alt-fill"></i> ' ?><?= esc($cell['ruangan_kode'] ?? $cell['ruangan_nama'] ?? '-') ?></div>
                                         <?php elseif ($viewType === 'ruangan'): ?>
                                             <div class="tt-subject-sub"><?= esc($cell['kelas_nama']) ?></div>
                                             <div class="tt-subject-sub"><?= esc($cell['guru_nama']) ?></div>

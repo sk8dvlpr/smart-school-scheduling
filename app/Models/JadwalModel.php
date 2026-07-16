@@ -130,6 +130,33 @@ class JadwalModel extends Model
     }
 
     /**
+     * Published schedule that has been approved by Kepala Sekolah (for Guru).
+     */
+    public function resolveApprovedScheduleLogId(int $tahunAjaranId, ?int $scheduleLogId = null): ?int
+    {
+        if ($scheduleLogId !== null && $scheduleLogId > 0) {
+            return $scheduleLogId;
+        }
+
+        $published = $this->resolveScheduleLogId($tahunAjaranId);
+        if ($published === null) {
+            return null;
+        }
+
+        $log = $this->db->table('schedule_logs')
+            ->select('id, approval_status')
+            ->where('id', $published)
+            ->get()
+            ->getRowArray();
+
+        if (! $log || ($log['approval_status'] ?? null) !== 'approved') {
+            return null;
+        }
+
+        return (int) $log['id'];
+    }
+
+    /**
      * Latest draft or any log for kurikulum preview when nothing published.
      */
     public function resolveKurikulumLogId(int $tahunAjaranId, ?int $scheduleLogId = null): ?int

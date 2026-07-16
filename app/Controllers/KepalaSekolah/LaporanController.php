@@ -32,7 +32,7 @@ class LaporanController extends BaseController
         $hasJadwal = false;
 
         if ($activeTa) {
-            $logId = $this->jadwalModel->resolveScheduleLogId((int) $activeTa['id']);
+            $logId = $this->jadwalModel->resolveApprovedScheduleLogId((int) $activeTa['id']);
             $hasJadwal = $logId !== null && $this->jadwalModel
                 ->where('tahun_ajaran_id', $activeTa['id'])
                 ->where('schedule_log_id', $logId)
@@ -81,10 +81,16 @@ class LaporanController extends BaseController
         $guruId  = (int) ($this->request->getGet('guru_id') ?? 0);
         $mapelId = (int) ($this->request->getGet('mapel_id') ?? 0);
 
+        $logId = $this->jadwalModel->resolveApprovedScheduleLogId((int) $activeTa['id']);
+        if ($logId === null) {
+            return redirect()->back()->with('error', 'Belum ada jadwal yang disetujui Kepala Sekolah.');
+        }
+
         $rows = $this->jadwalModel->getJamMengajarReport(
             $activeTa['id'],
             $guruId > 0 ? $guruId : null,
-            $mapelId > 0 ? $mapelId : null
+            $mapelId > 0 ? $mapelId : null,
+            $logId
         );
 
         if ($rows === []) {
@@ -92,7 +98,8 @@ class LaporanController extends BaseController
         }
 
         $meta = [
-            'sekolah'       => 'SMK Tunas Teknologi',
+            'sekolah'       => \App\Libraries\BrandingService::get()['nama_sekolah'],
+            'logo_data_uri' => \App\Libraries\BrandingService::logoDataUri(),
             'tahun_ajaran'  => $activeTa['nama'],
             'tanggal_cetak' => date('d/m/Y H:i'),
         ];

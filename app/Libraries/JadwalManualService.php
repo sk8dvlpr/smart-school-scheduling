@@ -42,7 +42,7 @@ class JadwalManualService
         return [
             'success'       => true,
             'message'       => $eligible === [] && $blocked === []
-                ? 'Tidak ada mapel kurikulum untuk kelas ini.'
+                ? 'Tidak ada mapel kurikulum untuk rombel ini.'
                 : 'OK',
             'slot_label'    => $validator->slotLabel($hariId, $timeslotId),
             'mapel_options' => $eligible,
@@ -114,7 +114,7 @@ class JadwalManualService
             return ['success' => false, 'message' => 'Jadwal tidak ditemukan.'];
         }
         if ((int) $row['kelas_id'] !== $kelasId) {
-            return ['success' => false, 'message' => 'Jadwal tidak termasuk kelas ini.'];
+            return ['success' => false, 'message' => 'Jadwal tidak termasuk rombel ini.'];
         }
 
         $this->jadwalModel->delete($jadwalId);
@@ -164,7 +164,7 @@ class JadwalManualService
             return ['success' => false, 'message' => 'Salah satu jadwal tidak ditemukan.'];
         }
         if ((int) $rowA['kelas_id'] !== $kelasId || (int) $rowB['kelas_id'] !== $kelasId) {
-            return ['success' => false, 'message' => 'Kedua jadwal harus dari kelas yang sama.'];
+            return ['success' => false, 'message' => 'Kedua jadwal harus dari rombel yang sama.'];
         }
 
         $validator = new JadwalPlacementValidator($tahunAjaranId, $scheduleLogId);
@@ -233,7 +233,7 @@ class JadwalManualService
             return 'Konflik guru: guru sudah mengajar di slot ini (HC-1).';
         }
         if (stripos($msg, 'jadwal_kelas_conflict') !== false) {
-            return 'Konflik kelas: slot sudah terisi (HC-2).';
+            return 'Konflik rombel: slot sudah terisi (HC-2).';
         }
         if (stripos($msg, 'jadwal_ruangan_conflict') !== false) {
             return 'Konflik ruangan: ruangan sudah dipakai di slot ini (HC-3).';

@@ -1,13 +1,13 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<?= view('components/datatables_styles') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 <div class="card">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold">Data Kelas</h5>
+        <h5 class="mb-0 fw-bold">Data Rombel</h5>
         <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
             <i class="bi bi-plus-lg"></i> Tambah Data
         </button>
@@ -38,16 +38,60 @@
             </div>
         <?php endif; ?>
 
-        <div class="table-responsive">
-            <table id="dataTable" class="table table-striped table-hover align-middle">
+        <form method="get" action="<?= base_url('kurikulum/kelas') ?>" class="row g-3 align-items-end mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Tahun Ajaran</label>
+                <select name="tahun_ajaran_id" class="form-select">
+                    <option value="">Semua Tahun Ajaran</option>
+                    <?php foreach ($ta as $t): ?>
+                        <option value="<?= (int) $t['id'] ?>" <?= (int) ($filter_tahun_ajaran ?? 0) === (int) $t['id'] ? 'selected' : '' ?>>
+                            <?= esc($t['nama']) ?> — <?= ucfirst(esc($t['semester'])) ?>
+                            <?= ! empty($t['is_active']) ? '(Aktif)' : '' ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tingkat</label>
+                <select name="tingkat" class="form-select">
+                    <option value="">Semua Tingkat</option>
+                    <?php foreach (['X', 'XI', 'XII'] as $tingkatOpt): ?>
+                        <option value="<?= $tingkatOpt ?>" <?= ($filter_tingkat ?? '') === $tingkatOpt ? 'selected' : '' ?>>
+                            <?= $tingkatOpt ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Jurusan</label>
+                <select name="jurusan_id" class="form-select">
+                    <option value="">Semua Jurusan</option>
+                    <?php foreach ($jurusan as $j): ?>
+                        <option value="<?= (int) $j['id'] ?>" <?= (int) ($filter_jurusan ?? 0) === (int) $j['id'] ? 'selected' : '' ?>>
+                            <?= esc($j['nama']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel"></i> Terapkan
+                </button>
+                <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-outline-secondary">
+                    Reset
+                </a>
+            </div>
+        </form>
+
+        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
                         <th>Tahun Ajaran</th>
                         <th>Tingkat</th>
-                        <th>Nama Kelas</th>
+                        <th>Nama Rombel</th>
                         <th>Jurusan</th>
-                        <th>Ruang Kelas (Homeroom)</th>
+                        <th>Ruang Rombel (Homeroom)</th>
                         <th>Total JP</th>
                         <th width="18%">Aksi</th>
                     </tr>
@@ -89,7 +133,6 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -102,7 +145,7 @@
                 <input type="hidden" name="_method" id="formMethod" value="POST">
                 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Tambah Kelas</h5>
+                    <h5 class="modal-title" id="modalTitle">Tambah Rombel</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -141,20 +184,20 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Nama Kelas Lengkap</label>
+                        <label class="form-label">Nama Rombel Lengkap</label>
                         <input type="text" class="form-control" name="nama" id="nama" placeholder="Contoh: X TKJ 1" required>
                         <div class="form-text">Pastikan nama unik dalam satu tahun ajaran.</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Ruang Kelas (Homeroom)</label>
+                        <label class="form-label">Ruang Rombel (Homeroom)</label>
                         <select class="form-select" name="ruangan_id" id="ruangan_id" required>
-                            <option value="">-- Pilih Ruang Kelas --</option>
+                            <option value="">-- Pilih Ruang Rombel --</option>
                             <?php foreach ($ruangan as $r): ?>
                                 <option value="<?= $r['id'] ?>"><?= esc($r['nama']) ?> (Kap: <?= $r['kapasitas'] ?>)</option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text">Berdasarkan constraint HC10, kelas akan selalu berada di ruangan ini kecuali untuk mata pelajaran praktek (Lab).</div>
+                        <div class="form-text">Berdasarkan constraint HC10, rombel akan selalu berada di ruangan ini kecuali untuk mata pelajaran praktek (Lab).</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -168,16 +211,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<?= view('components/datatables_scripts') ?>
 <script>
     $(document).ready(function() {
-        $('#dataTable').DataTable({
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-            },
-            responsive: true
-        });
+        $('#dataTable').DataTable();
     });
 
     const modal = new bootstrap.Modal(document.getElementById('formModal'));
@@ -185,7 +222,7 @@
     function openModal() {
         $('#formMethod').val('POST');
         $('#dataForm').attr('action', '<?= base_url('kurikulum/kelas') ?>');
-        $('#modalTitle').text('Tambah Kelas');
+        $('#modalTitle').text('Tambah Rombel');
         $('#dataForm')[0].reset();
         modal.show();
     }
@@ -194,7 +231,7 @@
         $.get('<?= base_url('kurikulum/kelas/') ?>' + id, function(data) {
             $('#formMethod').val('PUT');
             $('#dataForm').attr('action', '<?= base_url('kurikulum/kelas/') ?>' + id);
-            $('#modalTitle').text('Edit Kelas');
+            $('#modalTitle').text('Edit Rombel');
             
             $('#tahun_ajaran_id').val(data.tahun_ajaran_id);
             $('#tingkat').val(data.tingkat);

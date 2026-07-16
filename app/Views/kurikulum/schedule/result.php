@@ -12,10 +12,10 @@
                 $exportAllSuffix = !empty($schedule_log_id) ? '?schedule_log_id=' . (int) $schedule_log_id : '';
             ?>
             <a href="<?= base_url('kurikulum/schedule/export/pdf-all' . $exportAllSuffix) ?>" class="btn btn-outline-danger" target="_blank">
-                <i class="bi bi-file-pdf"></i> Export Semua Kelas (PDF)
+                <i class="bi bi-file-pdf"></i> Export Semua Rombel (PDF)
             </a>
             <a href="<?= base_url('kurikulum/schedule/export/excel-all' . $exportAllSuffix) ?>" class="btn btn-outline-success">
-                <i class="bi bi-file-excel"></i> Export Semua Kelas (Excel)
+                <i class="bi bi-file-excel"></i> Export Semua Rombel (Excel)
             </a>
             <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Kembali
@@ -28,7 +28,7 @@
     <div class="card-body">
         <ul class="nav nav-tabs mb-4" id="jadwalTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold" id="kelas-tab" data-bs-toggle="tab" data-bs-target="#kelas-pane" type="button" role="tab">Berdasarkan Kelas</button>
+                <button class="nav-link active fw-bold" id="kelas-tab" data-bs-toggle="tab" data-bs-target="#kelas-pane" type="button" role="tab">Berdasarkan Rombel</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link fw-bold" id="guru-tab" data-bs-toggle="tab" data-bs-target="#guru-pane" type="button" role="tab">Berdasarkan Guru</button>
@@ -39,11 +39,11 @@
         </ul>
         
         <div class="tab-content" id="jadwalTabContent">
-            <!-- Kelas Tab -->
+            <!-- Rombel Tab -->
             <div class="tab-pane fade show active" id="kelas-pane" role="tabpanel" tabindex="0">
                 <div class="row mb-4">
                     <div class="col-md-6">
-                        <label class="form-label">Pilih Kelas</label>
+                        <label class="form-label">Pilih Rombel</label>
                         <select class="form-select" id="selectKelas" onchange="loadJadwal('kelas', this.value)">
                             <option value="">-- Silakan Pilih --</option>
                             <?php foreach ($kelas as $k): ?>
@@ -65,7 +65,7 @@
                 <div id="jadwalContainerKelas">
                     <div class="text-center p-5 text-muted bg-light rounded">
                         <i class="bi bi-calendar-event fs-1 mb-3 d-block"></i>
-                        Silakan pilih kelas terlebih dahulu untuk melihat jadwal.
+                        Silakan pilih rombel terlebih dahulu untuk melihat jadwal.
                     </div>
                 </div>
             </div>
@@ -138,7 +138,7 @@
                     <select class="form-select" id="manualMapelSelect" required>
                         <option value="">— Pilih mapel —</option>
                     </select>
-                    <div class="form-text">Hanya mapel kurikulum kelas dengan sisa JP &gt; 0.</div>
+                    <div class="form-text">Hanya mapel kurikulum rombel dengan sisa JP &gt; 0.</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-medium" for="manualGuruSelect">Guru</label>
@@ -342,7 +342,7 @@
             return;
         }
         if (String(targetKelasId) !== String(swapState.sourceKelasId)) {
-            alert('Kedua sel harus dari kelas yang sama.');
+            alert('Kedua sel harus dari rombel yang sama.');
             return;
         }
 

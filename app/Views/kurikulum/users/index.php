@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<?= view('components/datatables_styles') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -39,8 +39,7 @@
             </div>
         <?php endif; ?>
 
-        <div class="table-responsive">
-            <table id="dataTable" class="table table-striped table-hover align-middle">
+            <table id="dataTable" class="table table-striped table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
@@ -65,7 +64,12 @@
                             <?php endif; ?>
                         </td>
                         <td class="fw-medium"><?= esc($row['nama']) ?></td>
-                        <td><span class="badge bg-info text-dark"><?= esc(ucwords(str_replace('_', ' ', $row['role']))) ?></span></td>
+                        <td>
+                            <span class="badge bg-info text-dark"><?= esc(ucwords(str_replace('_', ' ', $row['role']))) ?></span>
+                            <?php if ($row['role'] === 'kurikulum' && (int) ($row['is_admin'] ?? 0) === 1): ?>
+                                <span class="badge bg-dark ms-1">Admin</span>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <?php if ($row['is_active']): ?>
                                 <span class="badge bg-success">Aktif</span>
@@ -80,12 +84,14 @@
                             </button>
                             <?php endif; ?>
                             <?php if ((int) $row['id'] !== (int) session()->get('user_id')): ?>
+                            <?php if (! empty($is_admin)): ?>
                             <form action="<?= base_url('kurikulum/users/' . $row['id'] . '/reset-password') ?>" method="post" class="d-inline" onsubmit="return confirm('Reset password ke password123?');">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-sm btn-warning" title="Reset Password">
                                     <i class="bi bi-key"></i>
                                 </button>
                             </form>
+                            <?php endif; ?>
                             <form action="<?= base_url('kurikulum/users/' . $row['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Hapus user ini?');">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="_method" value="DELETE">
@@ -99,7 +105,6 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -148,6 +153,13 @@
                                 <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" checked>
                                 <label class="form-check-label" for="is_active">Aktif</label>
                             </div>
+                            <?php if (! empty($is_admin)): ?>
+                            <div class="form-check form-switch mt-2" id="isAdminWrap">
+                                <input class="form-check-input" type="checkbox" name="is_admin" id="is_admin" value="1">
+                                <label class="form-check-label" for="is_admin">Kurikulum admin (full access)</label>
+                            </div>
+                            <div class="form-text">Admin dapat reset password &amp; pengaturan aplikasi. Tidak boleh mengajar.</div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="alert alert-info py-2" id="passwordInfo">
@@ -165,14 +177,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<?= view('components/datatables_scripts') ?>
 <script>
     $(document).ready(function() {
-        $('#dataTable').DataTable({
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
-            responsive: true
-        });
+        $('#dataTable').DataTable();
     });
 
     const modal = new bootstrap.Modal(document.getElementById('formModal'));
@@ -183,6 +191,8 @@
         $('#modalTitle').text('Tambah User');
         $('#dataForm')[0].reset();
         $('#is_active').prop('checked', true);
+        $('#is_admin').prop('checked', false);
+        toggleAdminFlag();
         $('#passwordInfo').show();
         modal.show();
     }
@@ -198,9 +208,21 @@
             $('#no_telp').val(data.no_telp);
             $('#role').val(data.role);
             $('#is_active').prop('checked', data.is_active == 1);
+            $('#is_admin').prop('checked', data.is_admin == 1);
+            toggleAdminFlag();
             $('#passwordInfo').hide();
             modal.show();
         }).fail(function() { alert('Gagal mengambil data'); });
     }
+
+    function toggleAdminFlag() {
+        const isKurikulum = $('#role').val() === 'kurikulum';
+        $('#isAdminWrap').toggle(isKurikulum);
+        if (!isKurikulum) {
+            $('#is_admin').prop('checked', false);
+        }
+    }
+
+    $('#role').on('change', toggleAdminFlag);
 </script>
 <?= $this->endSection() ?>

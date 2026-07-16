@@ -155,6 +155,10 @@ class LaporanGuruJamExporter
         $school   = esc($meta['sekolah'] ?? 'SMK');
         $ta       = esc($meta['tahun_ajaran'] ?? '-');
         $printed  = esc($meta['tanggal_cetak'] ?? date('d/m/Y H:i'));
+        $logoUri  = $meta['logo_data_uri'] ?? null;
+        $logoHtml = is_string($logoUri) && $logoUri !== ''
+            ? '<div style="margin-bottom:8px;"><img src="' . $logoUri . '" style="max-height:48px;max-width:120px;"></div>'
+            : '';
 
         $html = '<html><head><style>
             body { font-family: DejaVu Sans, sans-serif; font-size: 11px; }
@@ -166,6 +170,7 @@ class LaporanGuruJamExporter
             .subtotal td { font-weight: bold; background: #f3f4f6; }
             .footer { margin-top: 16px; font-size: 10px; color: #666; }
         </style></head><body>';
+        $html .= $logoHtml;
         $html .= '<h2>Laporan Jam Mengajar Guru</h2>';
         $html .= '<div class="meta">' . $school . '<br>Tahun Ajaran: ' . $ta . '<br>Dicetak: ' . $printed . '</div>';
         $html .= '<table><thead><tr>

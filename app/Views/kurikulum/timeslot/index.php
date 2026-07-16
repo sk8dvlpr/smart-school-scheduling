@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<?= view('components/datatables_styles') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -42,8 +42,7 @@
             <?php endforeach; ?>
         </ul>
 
-        <div class="table-responsive">
-            <table id="dataTable" class="table table-striped table-hover align-middle">
+        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
@@ -84,7 +83,6 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -138,13 +136,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<?= view('components/datatables_scripts') ?>
 <script>
     $(document).ready(function() {
         $('#dataTable').DataTable({
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
-            responsive: true,
             ordering: false
         });
     });

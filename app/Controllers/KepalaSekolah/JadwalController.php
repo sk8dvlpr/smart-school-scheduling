@@ -55,6 +55,52 @@ class JadwalController extends BaseController
         ]);
     }
 
+    /**
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function approve()
+    {
+        $activeTa = $this->taModel->where('is_active', 1)->first();
+        if (! $activeTa) {
+            return redirect()->back()->with('error', 'Tidak ada Tahun Ajaran aktif.');
+        }
+
+        $note = $this->request->getPost('approval_note');
+        $result = (new ScheduleHistoryService())->approve(
+            (int) $activeTa['id'],
+            (int) session()->get('user_id'),
+            is_string($note) ? $note : null
+        );
+
+        return redirect()->to('/kepala-sekolah/jadwal')->with(
+            $result['success'] ? 'success' : 'error',
+            $result['message']
+        );
+    }
+
+    /**
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function reject()
+    {
+        $activeTa = $this->taModel->where('is_active', 1)->first();
+        if (! $activeTa) {
+            return redirect()->back()->with('error', 'Tidak ada Tahun Ajaran aktif.');
+        }
+
+        $note = $this->request->getPost('approval_note');
+        $result = (new ScheduleHistoryService())->reject(
+            (int) $activeTa['id'],
+            (int) session()->get('user_id'),
+            is_string($note) ? $note : null
+        );
+
+        return redirect()->to('/kepala-sekolah/jadwal')->with(
+            $result['success'] ? 'success' : 'error',
+            $result['message']
+        );
+    }
+
     public function viewByKelas(int $id): string
     {
         $activeTa = $this->taModel->where('is_active', 1)->first();

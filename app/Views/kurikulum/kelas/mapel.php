@@ -7,7 +7,7 @@
 
 <div class="card">
     <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold">Kurikulum Kelas — <?= esc($kelas['nama']) ?></h5>
+        <h5 class="mb-0 fw-bold">Kurikulum Rombel — <?= esc($kelas['nama']) ?></h5>
         <small class="text-muted">
             <?= esc($kelas['nama_jurusan']) ?> | <?= esc($kelas['ta_nama']) ?> |
             Total JP: <strong class="<?= $total_jp === 48 ? 'text-success' : 'text-warning' ?>"><?= $total_jp ?> / 48</strong>

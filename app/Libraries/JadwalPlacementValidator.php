@@ -184,7 +184,7 @@ class JadwalPlacementValidator
                 $this->kmDayLabFromJadwal[$kmId][$hariId] = $ruanganId;
                 $kelas = $this->kelasById[$kelasId] ?? [];
                 $this->labOccupant[$ruanganId][$hariId][$timeslotId] = [
-                    'kelas_nama' => (string) ($kelas['nama'] ?? ('Kelas #' . $kelasId)),
+                    'kelas_nama' => (string) ($kelas['nama'] ?? ('Rombel #' . $kelasId)),
                     'guru_nama'  => $this->guruNames[$guruId] ?? ('Guru #' . $guruId),
                 ];
             }
@@ -219,7 +219,7 @@ class JadwalPlacementValidator
                 'eligible'      => [],
                 'blocked'       => [],
                 'slot_codes'    => ['HC-2'],
-                'slot_message'  => 'Slot kelas ini sudah terisi.',
+                'slot_message'  => 'Slot rombel ini sudah terisi.',
             ];
         }
 
@@ -317,8 +317,8 @@ class JadwalPlacementValidator
                 $occ = $this->labOccupant[$ruanganId][$hariId][$timeslotId] ?? null;
                 $item['codes']   = ['HC-3'];
                 $item['message'] = $occ
-                    ? "Lab dipakai kelas {$occ['kelas_nama']} ({$occ['guru_nama']}) di slot ini."
-                    : 'Lab sudah dipakai kelas lain di slot ini.';
+                    ? "Lab dipakai rombel {$occ['kelas_nama']} ({$occ['guru_nama']}) di slot ini."
+                    : 'Lab sudah dipakai rombel lain di slot ini.';
                 if ($occ) {
                     $item['detail'] = $occ;
                 }
@@ -449,7 +449,7 @@ class JadwalPlacementValidator
                 return ['codes' => ['HC-4'], 'message' => 'Semua guru diblokir pada hari ini.'];
             }
             if ($jurusan === $n) {
-                return ['codes' => ['HC-7'], 'message' => 'Mapel tidak sesuai jurusan kelas.'];
+                return ['codes' => ['HC-7'], 'message' => 'Mapel tidak sesuai jurusan rombel.'];
             }
             if ($capped >= $n - $blocked - $jurusan) {
                 return ['codes' => ['HC-6'], 'message' => 'Cap mingguan semua guru eligible sudah habis.'];
@@ -502,7 +502,7 @@ class JadwalPlacementValidator
 
         $km = $this->kelasMapelById[$kelasMapelId] ?? null;
         if (! $km || (int) $km['kelas_id'] !== $kelasId) {
-            return ['valid' => false, 'violations' => ['HC-5'], 'message' => 'Mata pelajaran tidak termasuk kurikulum kelas ini.'];
+            return ['valid' => false, 'violations' => ['HC-5'], 'message' => 'Mata pelajaran tidak termasuk kurikulum rombel ini.'];
         }
 
         $slotMeta = SchedulingContext::slotMeta($hariId, $timeslotId, $this->jpSlotsByHari);
@@ -653,12 +653,12 @@ class JadwalPlacementValidator
     {
         $labels = [
             'HC-1' => 'Guru sudah mengajar di slot ini (konflik guru).',
-            'HC-2' => 'Kelas sudah memiliki jadwal di slot ini.',
-            'HC-3' => 'Lab sudah dipakai kelas lain di slot ini.',
+            'HC-2' => 'Rombel sudah memiliki jadwal di slot ini.',
+            'HC-3' => 'Lab sudah dipakai rombel lain di slot ini.',
             'HC-4' => 'Guru diblokir pada hari ini.',
-            'HC-5' => 'Kuota JP mapel untuk kelas ini sudah terpenuhi.',
+            'HC-5' => 'Kuota JP mapel untuk rombel ini sudah terpenuhi.',
             'HC-6' => 'Guru tidak eligible atau melebihi cap mingguan untuk mapel ini.',
-            'HC-7' => 'Mapel tidak sesuai jurusan kelas.',
+            'HC-7' => 'Mapel tidak sesuai jurusan rombel.',
             'HC-7-LAB' => 'Tidak ada lab jurusan yang tersedia untuk slot ini.',
             'HC-8' => 'Slot bukan jam pelajaran (JP).',
         ];
@@ -693,7 +693,7 @@ class JadwalPlacementValidator
     public function validateSwapSlots(array $rowA, array $rowB): array
     {
         if ((int) $rowA['kelas_id'] !== (int) $rowB['kelas_id']) {
-            return ['valid' => false, 'message' => 'Swap slot hanya untuk kelas yang sama.'];
+            return ['valid' => false, 'message' => 'Swap slot hanya untuk rombel yang sama.'];
         }
 
         return $this->validateHypotheticalSwap($rowA, $rowB, 'slots');
@@ -706,7 +706,7 @@ class JadwalPlacementValidator
     public function validateSwapMapel(array $rowA, array $rowB): array
     {
         if ((int) $rowA['kelas_id'] !== (int) $rowB['kelas_id']) {
-            return ['valid' => false, 'message' => 'Swap mapel hanya untuk kelas yang sama.'];
+            return ['valid' => false, 'message' => 'Swap mapel hanya untuk rombel yang sama.'];
         }
 
         return $this->validateHypotheticalSwap($rowA, $rowB, 'mapel');

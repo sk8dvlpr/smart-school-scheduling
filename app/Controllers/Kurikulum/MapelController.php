@@ -92,7 +92,7 @@ class MapelController extends BaseController
         $hasGuruMapel = $db->table('guru_mapel')->where('mapel_id', $id)->countAllResults() > 0;
 
         if ($hasKelasMapel || $hasGuruMapel) {
-            return redirect()->to('/kurikulum/mapel')->with('error', 'Gagal menghapus! Mata pelajaran ini masih digunakan di kurikulum kelas atau kompetensi guru.');
+            return redirect()->to('/kurikulum/mapel')->with('error', 'Gagal menghapus! Mata pelajaran ini masih digunakan di kurikulum rombel atau kompetensi guru.');
         }
 
         $this->mapelModel->delete($id);

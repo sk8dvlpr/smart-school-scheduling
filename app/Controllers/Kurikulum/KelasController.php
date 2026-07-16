@@ -21,7 +21,15 @@ class KelasController extends BaseController
     {
         $db = \Config\Database::connect();
 
-        $kelas = $db->table('kelas')
+        $filterTingkat = trim((string) $this->request->getGet('tingkat'));
+        $filterJurusan = (int) $this->request->getGet('jurusan_id');
+        $filterTa      = (int) $this->request->getGet('tahun_ajaran_id');
+
+        if (! in_array($filterTingkat, ['X', 'XI', 'XII'], true)) {
+            $filterTingkat = '';
+        }
+
+        $builder = $db->table('kelas')
             ->select('kelas.*, jurusan.nama as nama_jurusan, ruangan.nama as nama_ruangan,
                       tahun_ajaran.nama as ta_nama, tahun_ajaran.semester,
                       (SELECT COALESCE(SUM(km.jam_per_minggu), 0) FROM kelas_mapel km
@@ -29,7 +37,19 @@ class KelasController extends BaseController
             ->join('jurusan', 'jurusan.id = kelas.jurusan_id', 'left')
             ->join('ruangan', 'ruangan.id = kelas.ruangan_id', 'left')
             ->join('tahun_ajaran', 'tahun_ajaran.id = kelas.tahun_ajaran_id', 'left')
-            ->where('kelas.deleted_at IS NULL')
+            ->where('kelas.deleted_at IS NULL');
+
+        if ($filterTingkat !== '') {
+            $builder->where('kelas.tingkat', $filterTingkat);
+        }
+        if ($filterJurusan > 0) {
+            $builder->where('kelas.jurusan_id', $filterJurusan);
+        }
+        if ($filterTa > 0) {
+            $builder->where('kelas.tahun_ajaran_id', $filterTa);
+        }
+
+        $kelas = $builder
             ->orderBy('kelas.tahun_ajaran_id', 'DESC')
             ->orderBy('kelas.tingkat', 'ASC')
             ->orderBy('kelas.nama', 'ASC')
@@ -37,11 +57,14 @@ class KelasController extends BaseController
             ->getResultArray();
 
         return view('kurikulum/kelas/index', [
-            'title'   => 'Manajemen Kelas',
-            'kelas'   => $kelas,
-            'jurusan' => (new JurusanModel())->findAll(),
-            'ruangan' => (new RuanganModel())->where('tipe', 'kelas')->findAll(),
-            'ta'      => (new TahunAjaranModel())->orderBy('id', 'DESC')->findAll(),
+            'title'            => 'Manajemen Rombel',
+            'kelas'            => $kelas,
+            'jurusan'          => (new JurusanModel())->findAll(),
+            'ruangan'          => (new RuanganModel())->where('tipe', 'kelas')->findAll(),
+            'ta'               => (new TahunAjaranModel())->orderBy('id', 'DESC')->findAll(),
+            'filter_tingkat'   => $filterTingkat,
+            'filter_jurusan'   => $filterJurusan,
+            'filter_tahun_ajaran' => $filterTa,
         ]);
     }
 
@@ -61,12 +84,12 @@ class KelasController extends BaseController
             ->countAllResults() > 0;
 
         if ($exists) {
-            return redirect()->back()->withInput()->with('error', 'Nama kelas sudah ada pada tahun ajaran tersebut.');
+            return redirect()->back()->withInput()->with('error', 'Nama rombel sudah ada pada tahun ajaran tersebut.');
         }
 
         $this->kelasModel->insert($data);
 
-        return redirect()->to('/kurikulum/kelas')->with('success', 'Kelas berhasil ditambahkan.');
+        return redirect()->to('/kurikulum/kelas')->with('success', 'Rombel berhasil ditambahkan.');
     }
 
     public function show(int $id)
@@ -96,12 +119,12 @@ class KelasController extends BaseController
             ->countAllResults() > 0;
 
         if ($exists) {
-            return redirect()->back()->withInput()->with('error', 'Nama kelas sudah ada pada tahun ajaran tersebut.');
+            return redirect()->back()->withInput()->with('error', 'Nama rombel sudah ada pada tahun ajaran tersebut.');
         }
 
         $this->kelasModel->update($id, $data);
 
-        return redirect()->to('/kurikulum/kelas')->with('success', 'Kelas berhasil diperbarui.');
+        return redirect()->to('/kurikulum/kelas')->with('success', 'Rombel berhasil diperbarui.');
     }
 
     public function delete(int $id)
@@ -112,11 +135,11 @@ class KelasController extends BaseController
         $hasJadwal = $db->table('jadwal')->where('kelas_id', $id)->countAllResults() > 0;
 
         if ($hasKelasMapel || $hasJadwal) {
-            return redirect()->to('/kurikulum/kelas')->with('error', 'Gagal menghapus! Kelas ini memiliki kurikulum mapel atau jadwal aktif.');
+            return redirect()->to('/kurikulum/kelas')->with('error', 'Gagal menghapus! Rombel ini memiliki kurikulum mapel atau jadwal aktif.');
         }
 
         $this->kelasModel->delete($id);
 
-        return redirect()->to('/kurikulum/kelas')->with('success', 'Kelas berhasil dihapus.');
+        return redirect()->to('/kurikulum/kelas')->with('success', 'Rombel berhasil dihapus.');
     }
 }

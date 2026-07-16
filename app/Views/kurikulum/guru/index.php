@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('styles') ?>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<?= view('components/datatables_styles') ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -51,8 +51,7 @@
             </div>
         <?php endif; ?>
 
-        <div class="table-responsive">
-            <table id="dataTable" class="table table-striped table-hover align-middle">
+        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
@@ -81,8 +80,11 @@
                             <a href="<?= base_url('kurikulum/guru/' . $row['id'] . '/mapel') ?>" class="btn btn-sm btn-outline-primary" title="Kelola Mapel">
                                 <i class="bi bi-book"></i>
                             </a>
-                            <a href="<?= base_url('kurikulum/guru/' . $row['id'] . '/hari-blokir') ?>" class="btn btn-sm btn-outline-warning" title="Hari Blokir">
+                            <a href="<?= base_url('kurikulum/guru/' . $row['id'] . '/hari-blokir') ?>" class="btn btn-sm btn-outline-warning" title="Hari Blokir (HC-4)">
                                 <i class="bi bi-calendar-x"></i>
+                            </a>
+                            <a href="<?= base_url('kurikulum/guru/' . $row['id'] . '/preferensi') ?>" class="btn btn-sm btn-outline-success" title="Preferensi Jadwal (SC-7)">
+                                <i class="bi bi-sliders"></i>
                             </a>
                             <button type="button" class="btn btn-sm btn-info text-white" onclick="editData(<?= $row['id'] ?>)">
                                 <i class="bi bi-pencil"></i>
@@ -95,7 +97,6 @@
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -128,7 +129,7 @@
                                 <option value="<?= $u['id'] ?>"><?= esc($u['email'] . ' — ' . $u['nama']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text">Untuk user kurikulum yang sudah ada tetapi belum punya profil mengajar.</div>
+                        <div class="form-text">Untuk user kurikulum yang sudah ada tetapi belum punya profil mengajar (bukan kurikulum admin).</div>
                     </div>
 
                     <div id="newUserFields">
@@ -203,14 +204,10 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<?= view('components/datatables_scripts') ?>
 <script>
     $(document).ready(function() {
-        $('#dataTable').DataTable({
-            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json' },
-            responsive: true
-        });
+        $('#dataTable').DataTable();
 
         $('input[name="mode_radio"]').on('change', function() {
             setEntryMode($(this).val());

@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta id="csrf-token" name="<?= csrf_token() ?>" content="<?= csrf_hash() ?>">
-    <title><?= $title ?? 'S3 Dashboard' ?></title>
+    <?php $branding = \App\Libraries\BrandingService::get(); ?>
+    <title><?= esc($title ?? $branding['nama_sekolah']) ?></title>
+    <?php if (! empty($branding['logo_url'])): ?>
+        <link rel="icon" href="<?= esc($branding['logo_url']) ?>" type="image/png">
+    <?php endif; ?>
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -23,7 +27,14 @@
         <!-- Sidebar  -->
         <nav id="sidebar">
             <div class="sidebar-header">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-calendar-check"></i> S3 System</h5>
+                <?php if (! empty($branding['logo_url'])): ?>
+                    <div class="d-flex align-items-center gap-2">
+                        <img src="<?= esc($branding['logo_url']) ?>" alt="Logo" style="height: 32px; width: auto; max-width: 40px; object-fit: contain; border-radius: 4px; background: #fff;">
+                        <h5 class="mb-0 fw-bold text-truncate" title="<?= esc($branding['nama_sekolah']) ?>"><?= esc($branding['nama_sekolah']) ?></h5>
+                    </div>
+                <?php else: ?>
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-calendar-check"></i> <?= esc($branding['nama_sekolah']) ?></h5>
+                <?php endif; ?>
             </div>
 
             <ul class="list-unstyled components">
@@ -63,7 +74,7 @@
                         <a href="<?= base_url('kurikulum/guru') ?>"><i class="bi bi-person-badge"></i> Guru</a>
                     </li>
                     <li class="<?= url_is('kurikulum/kelas*') ? 'active' : '' ?>">
-                        <a href="<?= base_url('kurikulum/kelas') ?>"><i class="bi bi-building"></i> Kelas</a>
+                        <a href="<?= base_url('kurikulum/kelas') ?>"><i class="bi bi-building"></i> Rombel</a>
                     </li>
                     <li class="<?= url_is('kurikulum/mapel*') ? 'active' : '' ?>">
                         <a href="<?= base_url('kurikulum/mapel') ?>"><i class="bi bi-book"></i> Mata Pelajaran</a>
@@ -77,12 +88,20 @@
                     <li class="<?= url_is('kurikulum/schedule*') ? 'active' : '' ?>">
                         <a href="<?= base_url('kurikulum/schedule') ?>"><i class="bi bi-cpu"></i> Generator Jadwal</a>
                     </li>
+                    <?php if ((int) session()->get('is_admin') === 1): ?>
+                    <li class="<?= url_is('kurikulum/pengaturan*') ? 'active' : '' ?>">
+                        <a href="<?= base_url('kurikulum/pengaturan') ?>"><i class="bi bi-gear"></i> Pengaturan</a>
+                    </li>
+                    <?php endif; ?>
                     <?php if (session()->get('guru_id')): ?>
                         <li class="px-3 mt-4 mb-2">
                             <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Mengajar</small>
                         </li>
                         <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
                             <a href="<?= base_url('guru/preferensi') ?>"><i class="bi bi-sliders"></i> Preferensi Jadwal</a>
+                        </li>
+                        <li class="<?= url_is('guru/hari-blokir*') ? 'active' : '' ?>">
+                            <a href="<?= base_url('guru/hari-blokir') ?>"><i class="bi bi-calendar-x"></i> Hari Tidak Mengajar</a>
                         </li>
                         <li class="<?= url_is('guru/jadwal*') ? 'active' : '' ?>">
                             <a href="<?= base_url('guru/jadwal') ?>"><i class="bi bi-calendar-week"></i> Jadwal Saya</a>
@@ -99,6 +118,12 @@
                     </li>
                     <li class="<?= url_is('guru/jadwal*') ? 'active' : '' ?>">
                         <a href="<?= base_url('guru/jadwal') ?>"><i class="bi bi-calendar-week"></i> Jadwal Mengajar</a>
+                    </li>
+                    <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
+                        <a href="<?= base_url('guru/preferensi') ?>"><i class="bi bi-sliders"></i> Preferensi Jadwal</a>
+                    </li>
+                    <li class="<?= url_is('guru/hari-blokir*') ? 'active' : '' ?>">
+                        <a href="<?= base_url('guru/hari-blokir') ?>"><i class="bi bi-calendar-x"></i> Hari Tidak Mengajar</a>
                     </li>
                     <li class="<?= url_is('profile*') ? 'active' : '' ?>">
                         <a href="<?= base_url('profile') ?>"><i class="bi bi-person-circle"></i> Profil</a>
@@ -166,7 +191,7 @@
                 </div>
             </nav>
 
-            <div class="p-4">
+            <div class="p-4 pb-5">
                 <?= $this->renderSection('content') ?>
             </div>
         </div>

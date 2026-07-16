@@ -8,7 +8,7 @@
             <a href="<?= base_url('kurikulum/schedule/result') ?>" class="btn btn-outline-primary btn-sm"><i class="bi bi-calendar-week"></i> Lihat Jadwal</a>
             <a href="<?= base_url('kurikulum/users') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people"></i> User</a>
             <a href="<?= base_url('kurikulum/guru') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-badge"></i> Guru</a>
-            <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-building"></i> Kelas</a>
+            <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-building"></i> Rombel</a>
             <a href="<?= base_url('kurikulum/timeslot') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clock"></i> Timeslot</a>
         </div>
     </div>
@@ -46,7 +46,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50">Total Kelas</h6>
+                        <h6 class="text-white-50">Total Rombel</h6>
                         <h2 class="mb-0 fw-bold"><?= $total_kelas ?></h2>
                     </div>
                     <div class="fs-1 text-white-50"><i class="bi bi-building"></i></div>
@@ -143,7 +143,7 @@
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-4">Distribusi Kelas per Jurusan</h5>
+                <h5 class="card-title fw-bold mb-4">Distribusi Rombel per Jurusan</h5>
                 <canvas id="jurusanChart" height="100"></canvas>
             </div>
         </div>
@@ -162,7 +162,7 @@
                             <tr>
                                 <th>Jam</th>
                                 <th>Mapel</th>
-                                <th>Kelas</th>
+                                <th>Rombel</th>
                                 <th>Ruangan</th>
                             </tr>
                         </thead>

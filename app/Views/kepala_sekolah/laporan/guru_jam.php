@@ -1,5 +1,9 @@
 <?= $this->extend('layouts/main') ?>
 
+<?= $this->section('styles') ?>
+<?= view('components/datatables_styles') ?>
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -82,37 +86,35 @@
                 Tidak ada data untuk filter yang dipilih.
             </div>
         <?php else: ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" id="laporanTable">
-                    <thead class="table-light">
+            <table class="table table-hover align-middle w-100" id="laporanTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>NIP</th>
+                        <th>Nama Guru</th>
+                        <th>Kode Mapel</th>
+                        <th>Nama Mapel</th>
+                        <th class="text-end">JP/Minggu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($grouped as $group): ?>
+                        <?php foreach ($group['rows'] as $item): ?>
                         <tr>
-                            <th>NIP</th>
-                            <th>Nama Guru</th>
-                            <th>Kode Mapel</th>
-                            <th>Nama Mapel</th>
-                            <th class="text-end">JP/Minggu</th>
+                            <td><?= esc($group['nip'] ?: '-') ?></td>
+                            <td><?= esc($group['nama_guru']) ?></td>
+                            <td><?= esc($item['mapel_kode'] ?? '') ?></td>
+                            <td><?= esc($item['mapel_nama'] ?? '') ?></td>
+                            <td class="text-end"><?= (int) $item['total_jp'] ?></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($grouped as $group): ?>
-                            <?php foreach ($group['rows'] as $item): ?>
-                            <tr>
-                                <td><?= esc($group['nip'] ?: '-') ?></td>
-                                <td><?= esc($group['nama_guru']) ?></td>
-                                <td><?= esc($item['mapel_kode'] ?? '') ?></td>
-                                <td><?= esc($item['mapel_nama'] ?? '') ?></td>
-                                <td class="text-end"><?= (int) $item['total_jp'] ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <tr class="table-secondary fw-bold">
-                                <td colspan="3" class="text-end">Subtotal <?= esc($group['nama_guru']) ?></td>
-                                <td></td>
-                                <td class="text-end"><?= (int) $group['subtotal'] ?></td>
-                            </tr>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                        <tr class="table-secondary fw-bold">
+                            <td colspan="3" class="text-end">Subtotal <?= esc($group['nama_guru']) ?></td>
+                            <td></td>
+                            <td class="text-end"><?= (int) $group['subtotal'] ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
             <p class="text-muted small mb-0 mt-3">
                 <i class="bi bi-info-circle me-1"></i>
                 Data dari jadwal generate terakhir — untuk perhitungan gaji manual.
@@ -125,16 +127,11 @@
 
 <?php if ($active_ta && $has_jadwal && $rows !== []): ?>
 <?= $this->section('scripts') ?>
+<?= view('components/datatables_scripts') ?>
 <script>
     $(document).ready(function() {
         $('#laporanTable').DataTable({
-            paging: true,
-            searching: true,
-            ordering: true,
-            pageLength: 25,
-            language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/id.json'
-            }
+            pageLength: 25
         });
     });
 </script>

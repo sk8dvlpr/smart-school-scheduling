@@ -202,6 +202,13 @@
                             <input type="number" step="0.5" class="form-control" name="sc11_lab_load_balance" value="<?= esc($config['sc11_lab_load_balance'] ?? 6) ?>" min="0" max="10" required>
                         </div>
                         <div class="col-md-4">
+                            <label class="form-label fw-medium">SC-12 — Packing lab paralel (jurusan+tingkat)</label>
+                            <input type="number" step="0.5" class="form-control" name="sc_lab_day_pack" value="<?= esc($config['sc_lab_day_pack'] ?? 7) ?>" min="0" max="10" required>
+                            <div class="form-text">Preferensi isi lab sejajar di hari yang sama untuk rombel se-tingkat+jurusan. Bukan hard constraint; JP sisa boleh hari lain.</div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
                             <label class="form-label fw-medium">Lab preferensi (HC-7 pelengkap)</label>
                             <input type="number" step="0.5" class="form-control" name="sc_lab_preference" value="<?= esc($config['sc_lab_preference'] ?? 5) ?>" min="0" max="10" required>
                             <div class="form-text">Penalti jika penempatan tidak di lab utama kelas_mapel.</div>

@@ -2,7 +2,7 @@
 
 **Versi**: 3.2  
 **Tanggal**: 5 Juli 2026  
-**Last Updated**: 7 Juli 2026 — sinkronisasi dokumen dengan aplikasi: login email, 16 tabel (`guru_preferensi`), history/publish jadwal, koreksi manual swap, lab pool jurusan, SC-7 & `sc_lab_preference`  
+**Last Updated**: 15 Juli 2026 — Guru self-service `guru_hari_blokir`, approval Kepsek setelah publish, SC-12 lab day packing, pengaturan nama/logo sekolah (`app_settings`)  
 **Tech Stack**: PHP 8.2+, CodeIgniter 4.7, MySQL/MariaDB  
 **Algoritma**: Constraint Satisfaction Problem (CSP) + Genetic Algorithm (GA)
 
@@ -504,7 +504,7 @@ erDiagram
 | `nama` | VARCHAR(50) | NOT NULL | Contoh: "2025/2026" |
 | `semester` | ENUM('ganjil','genap') | NOT NULL | |
 | `is_active` | TINYINT(1) | DEFAULT 0 | Hanya 1 yang aktif |
-| `published_schedule_log_id` | INT | FK → schedule_logs.id, NULL | Log jadwal yang dipublish ke Guru & Kepala Sekolah |
+| `published_schedule_log_id` | INT | FK → schedule_logs.id, NULL | Log jadwal yang dipublish (Kepsek review; Guru lihat jika approved) |
 | `tanggal_mulai` | DATE | NOT NULL | |
 | `tanggal_selesai` | DATE | NOT NULL | |
 | `created_at` | DATETIME | | |
@@ -724,11 +724,13 @@ erDiagram
 | `sc9_teacher_continuity` | 4 | SC-9 kontinuitas guru/kelas |
 | `sc10_first_slot_rotation` | 3 | SC-10 rotasi mapel jam pertama |
 | `sc11_lab_load_balance` | 6 | SC-11 load balancing lab antar jurusan |
+| `sc_lab_day_pack` | 7 | SC-12 packing lab paralel per jurusan+tingkat |
 | `sc7_teacher_preference` | 5 | SC-7 preferensi/hindari hari-slot guru (`guru_preferensi`) |
 | `sc_lab_preference` | 5 | Penalti GA jika lab aktual ≠ `kelas_mapel.lab_id` (preferensi lab utama) |
 
 > `default_password` (password123) tetap tersedia untuk reset password; tidak lagi disimpan sebagai param generator.
 > **SC-7** diimplementasikan via tabel `guru_preferensi`, UI Guru (`/guru/preferensi`), dan penalty GA (`sc7_teacher_preference`).
+> **SC-12** (`sc_lab_day_pack`) adalah soft constraint — preferensi mengisi lab sejajar di hari yang sama; JP sisa boleh hari lain; generate tidak gagal.
 
 ---
 
@@ -747,8 +749,12 @@ erDiagram
 | `generated_by` | INT | FK → users.id, NOT NULL | User yang memulai |
 | `started_at` | DATETIME | NOT NULL | |
 | `completed_at` | DATETIME | NULL | |
-| `published_at` | DATETIME | NULL | Waktu publish ke Guru/Kepala Sekolah |
-| `published_by` | INT | FK → users.id, NULL | User yang publish |
+| `published_at` | DATETIME | NULL | Waktu publish ke Kepala Sekolah (menunggu approval) |
+| `published_by` | INT | FK → users.id, NULL | User Kurikulum yang publish |
+| `approval_status` | ENUM('pending','approved','rejected') | NULL | Status persetujuan Kepsek; NULL jika belum/bukan published |
+| `approved_at` | DATETIME | NULL | Waktu approve/reject |
+| `approved_by` | INT | FK → users.id, NULL | User Kepala Sekolah |
+| `approval_note` | VARCHAR(500) | NULL | Catatan approve/reject (opsional) |
 | `label` | VARCHAR(120) | NULL | Label tampilan (mis. "Generate #3") |
 | `unplaced_report` | TEXT | NULL | Laporan unit tidak terpasang (partial) |
 | `parent_schedule_log_id` | INT | FK → schedule_logs.id, NULL | Sumber history untuk mode repair |
@@ -963,10 +969,11 @@ Setiap unit perlu assignment: `(hari, timeslot, guru_id, ruangan_id)`.
 | SC-9 | Kontinuitas guru per kelas | 4 | Otomatis terpenuhi (1 guru per `kelas_mapel`) — penalti 0 |
 | SC-10 | Rotasi/tidak monoton mapel jam pertama | 3 | Variasi mapel di jam pertama antar hari |
 | SC-11 | Load balancing lab/bengkel antar jurusan | 6 | Cegah kontensi pemakaian lab antar jurusan |
+| SC-12 | Packing lab paralel (jurusan+tingkat) | 7 | Isi lab sejajar di hari yang sama untuk kelas se-tingkat+jurusan; JP sisa boleh hari lain; **bukan HC** |
 
 > **Fitness** menormalisasi tiap penalti ke rentang 0–1 sebelum dikali bobot, agar tidak ada constraint yang mendominasi hanya karena skalanya besar.
 
-> **Ketersediaan hari guru** (`guru_hari_blokir`) bersifat **hard constraint (HC-4)**, bukan soft — guru yang diblokir di hari tertentu **tidak boleh** mendapat jadwal sama sekali di hari tersebut.
+> **Ketersediaan hari guru** (`guru_hari_blokir`) bersifat **hard constraint (HC-4)**, bukan soft — guru yang diblokir di hari tertentu **tidak boleh** mendapat jadwal sama sekali di hari tersebut. Guru dapat mengisi hari blokir sendiri via `/guru/hari-blokir` (data milik sendiri); Kurikulum tetap bisa override.
 
 **GA Parameters** (v3.0):
 - **Chromosome**: Satu jadwal lengkap (array of schedule assignments)
@@ -1126,7 +1133,8 @@ Setiap modul master data memiliki fitur CRUD standar:
 | Pre-validation | Cek kelengkapan data sebelum generate |
 | Generate | Tombol generate dengan progress indicator |
 | Result View | Tabel jadwal per kelas, per guru, per ruangan |
-| History & Publish | Setiap generate membuat `schedule_log` terpisah; Kurikulum **publish** log ke Guru & Kepala Sekolah (`tahun_ajaran.published_schedule_log_id`) |
+| History & Publish | Setiap generate membuat `schedule_log` terpisah; Kurikulum **publish** → status approval `pending` |
+| Approval Kepsek | Kepala Sekolah **Setujui/Tolak** jadwal published; Guru hanya melihat log yang `approved`; publish ulang mereset approval |
 | Conflict Report | Jika ada konflik tersisa, tampilkan detail |
 | History | Log semua proses generate sebelumnya + mode `history_repair` |
 | Reset | Hapus semua history jadwal tahun ajaran |
@@ -1418,7 +1426,8 @@ GET    /kepala-sekolah/laporan/guru-jam/export → KepalaSekolah\LaporanControll
 ### Batasan Teknis
 - Generate jadwal bersifat **synchronous** (satu proses pada satu waktu)
 - Koreksi manual jadwal: tambah/hapus/swap per slot di tab Kelas (bukan drag-and-drop); validasi HC-1..HC-8, tanpa re-run GA
-- Jadwal multi-history: setiap generate = `schedule_log` baru; Guru/Kepala Sekolah hanya melihat log yang **dipublish**
+- Jadwal multi-history: setiap generate = `schedule_log` baru; Kurikulum publish → Kepsek approve; **Guru hanya melihat log yang dipublish dan disetujui**
+- Pengaturan branding: nama sekolah + logo (`app_settings`) di login, sidebar, favicon, dan PDF export
 - Tidak ada fitur **notification** email/push (v2)
 - Maksimal mendukung **~50 kelas** dan **~80 guru** untuk performa optimal
 - Export tersedia dalam format **PDF** (DomPDF) dan **Excel** (PhpSpreadsheet)

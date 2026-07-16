@@ -67,7 +67,7 @@ class JurusanController extends BaseController
         $hasKelas = $db->table('kelas')->where('jurusan_id', $id)->where('deleted_at IS NULL')->countAllResults() > 0;
 
         if ($hasMapel || $hasKelas) {
-            return redirect()->to('/kurikulum/jurusan')->with('error', 'Gagal menghapus! Jurusan ini sedang digunakan oleh Kelas atau Mata Pelajaran.');
+            return redirect()->to('/kurikulum/jurusan')->with('error', 'Gagal menghapus! Jurusan ini sedang digunakan oleh Rombel atau Mata Pelajaran.');
         }
 
         $this->jurusanModel->delete($id);

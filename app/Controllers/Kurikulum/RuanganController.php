@@ -92,7 +92,7 @@ class RuanganController extends BaseController
         $hasKelasMapel = $db->table('kelas_mapel')->where('lab_id', $id)->countAllResults() > 0;
 
         if ($hasKelas || $hasKelasMapel) {
-            return redirect()->to('/kurikulum/ruangan')->with('error', 'Gagal menghapus! Ruangan ini sedang digunakan sebagai kelas atau lab.');
+            return redirect()->to('/kurikulum/ruangan')->with('error', 'Gagal menghapus! Ruangan ini sedang digunakan sebagai rombel atau lab.');
         }
 
         $this->ruanganModel->delete($id);

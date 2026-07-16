@@ -1,4 +1,4 @@
-<h5 class="fw-bold mb-3">Jadwal Kelas: <?= esc($kelas['nama']) ?></h5>
+<h5 class="fw-bold mb-3">Jadwal Rombel: <?= esc($kelas['nama']) ?></h5>
 
 <?php $editable = $editable ?? true; ?>
 <?php if ($editable): ?>
@@ -10,7 +10,7 @@
 
 <?php if (empty($jadwal)): ?>
     <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle"></i> Belum ada jadwal untuk kelas ini<?= $editable ? ' — Anda tetap bisa menambah mapel manual ke slot kosong' : '' ?>.
+        <i class="bi bi-exclamation-triangle"></i> Belum ada jadwal untuk rombel ini<?= $editable ? ' — Anda tetap bisa menambah mapel manual ke slot kosong' : '' ?>.
     </div>
 <?php endif; ?>
     <?= view('components/timetable', [

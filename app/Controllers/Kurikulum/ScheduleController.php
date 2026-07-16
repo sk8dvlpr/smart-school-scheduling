@@ -213,6 +213,7 @@ class ScheduleController extends BaseController
                 'sc4_heavy_morning', 'sc5_light_afternoon',                 'sc6_teacher_load_balance', 'sc7_teacher_preference',
                 'sc8_room_transition', 'sc9_teacher_continuity', 'sc10_first_slot_rotation',
                 'sc11_lab_load_balance',
+                'sc_lab_day_pack',
                 'sc_lab_preference',
             ], true)) {
                 $existing = $this->configModel->where('tahun_ajaran_id', $activeTa['id'])
@@ -381,7 +382,7 @@ class ScheduleController extends BaseController
 
         $kelasId = (int) ($this->request->getPost('kelas_id') ?: $this->request->getGet('kelas_id'));
         if ($kelasId < 1) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Kelas tidak valid.']);
+            return $this->response->setJSON(['success' => false, 'message' => 'Rombel tidak valid.']);
         }
 
         $service = new JadwalManualService();
@@ -699,6 +700,7 @@ class ScheduleController extends BaseController
             'sc9_teacher_continuity'      => 4,
             'sc10_first_slot_rotation'    => 3,
             'sc11_lab_load_balance'       => 6,
+            'sc_lab_day_pack'             => 7,
             'sc_lab_preference'           => 5,
         ];
 

@@ -3,6 +3,7 @@
 namespace App\Controllers\Guru;
 
 use App\Controllers\BaseController;
+use App\Libraries\ScheduleHistoryService;
 use App\Models\JadwalModel;
 use App\Models\TahunAjaranModel;
 use App\Models\UserModel;
@@ -26,34 +27,55 @@ class DashboardController extends BaseController
         $totalKelas  = 0;
         $jadwalHariIni = [];
         $jadwalBesok = [];
+        $publishedLog = null;
+        $approvalNote = null;
 
         if ($activeTa) {
-            $jadwal = $jadwalModel->getByGuru($guruId, $activeTa['id']);
-            $totalKelas = count(array_unique(array_column($jadwal, 'kelas_id')));
-            $totalJp = $jadwalModel->countJpByGuru($guruId, $activeTa['id']);
+            $historySvc   = new ScheduleHistoryService();
+            $publishedLog = $historySvc->getPublishedLog((int) $activeTa['id']);
+            $logId        = $jadwalModel->resolveApprovedScheduleLogId((int) $activeTa['id']);
 
-            $hariModel = new HariModel();
-            $hariIni = $hariModel->where('urutan', (int) date('N'))->first();
-            $besokUrutan = (int) date('N') + 1;
-            if ($besokUrutan > 5) {
-                $besokUrutan = 1;
-            }
-            $hariBesok = $hariModel->where('urutan', $besokUrutan)->first();
+            if ($logId === null) {
+                if ($publishedLog !== null) {
+                    $status = $publishedLog['approval_status'] ?? 'pending';
+                    if ($status === 'pending') {
+                        $approvalNote = 'Jadwal sudah dipublish, menunggu persetujuan Kepala Sekolah.';
+                    } elseif ($status === 'rejected') {
+                        $approvalNote = 'Jadwal ditolak Kepala Sekolah. Menunggu Kurikulum publish ulang.';
+                    } else {
+                        $approvalNote = 'Belum ada jadwal yang disetujui Kepala Sekolah.';
+                    }
+                } else {
+                    $approvalNote = 'Belum ada jadwal yang dipublish oleh Kurikulum.';
+                }
+            } else {
+                $jadwal = $jadwalModel->getByGuru($guruId, (int) $activeTa['id'], $logId);
+                $totalKelas = count(array_unique(array_column($jadwal, 'kelas_id')));
+                $totalJp = $jadwalModel->countJpByGuru($guruId, (int) $activeTa['id'], $logId);
 
-            if ($hariIni) {
-                $hariIniId = (int) $hariIni['id'];
-                $jadwalHariIni = array_values(array_filter(
-                    $jadwal,
-                    fn ($row) => (int) $row['hari_id'] === $hariIniId
-                ));
-            }
+                $hariModel = new HariModel();
+                $hariIni = $hariModel->where('urutan', (int) date('N'))->first();
+                $besokUrutan = (int) date('N') + 1;
+                if ($besokUrutan > 5) {
+                    $besokUrutan = 1;
+                }
+                $hariBesok = $hariModel->where('urutan', $besokUrutan)->first();
 
-            if ($hariBesok) {
-                $besokId = (int) $hariBesok['id'];
-                $jadwalBesok = array_values(array_filter(
-                    $jadwal,
-                    fn ($row) => (int) $row['hari_id'] === $besokId
-                ));
+                if ($hariIni) {
+                    $hariIniId = (int) $hariIni['id'];
+                    $jadwalHariIni = array_values(array_filter(
+                        $jadwal,
+                        fn ($row) => (int) $row['hari_id'] === $hariIniId
+                    ));
+                }
+
+                if ($hariBesok) {
+                    $besokId = (int) $hariBesok['id'];
+                    $jadwalBesok = array_values(array_filter(
+                        $jadwal,
+                        fn ($row) => (int) $row['hari_id'] === $besokId
+                    ));
+                }
             }
         }
 
@@ -68,6 +90,8 @@ class DashboardController extends BaseController
             'total_kelas'     => $totalKelas,
             'jadwal_besok'    => $jadwalBesok,
             'active_ta'       => $activeTa,
+            'published_log'   => $publishedLog,
+            'approval_note'   => $approvalNote,
         ]);
     }
 }

@@ -38,6 +38,7 @@ class GuruController extends BaseController
             ->whereIn('role', ['guru', 'kurikulum'])
             ->where('deleted_at IS NULL')
             ->where('is_active', 1)
+            ->where('is_admin', 0)
             ->orderBy('nama', 'ASC')
             ->get()
             ->getResultArray();

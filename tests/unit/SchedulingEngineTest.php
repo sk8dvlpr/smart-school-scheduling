@@ -93,6 +93,7 @@ final class SchedulingEngineTest extends CIUnitTestCase
                         'kelas_id'       => $c['kelas_id'],
                         'mapel_id'       => $p['mapel'],
                         'jurusan_id'     => 1,
+                        'tingkat'        => 'X',
                         'unit_index'     => $i,
                         'butuh_lab'      => $p['lab'],
                         'lab_id'         => $p['lab'] === 1 ? 300 : null,
@@ -424,5 +425,146 @@ final class SchedulingEngineTest extends CIUnitTestCase
         $fitPreferred = $ga->optimize($preferred)['fitness'];
         $fitAlternate = $ga->optimize($alternate)['fitness'];
         $this->assertGreaterThan($fitAlternate, $fitPreferred);
+    }
+
+    public function testLabDayPackPenaltyLowerWhenParallelPacked(): void
+    {
+        $units = [
+            1 => ['butuh_lab' => 1, 'jurusan_id' => 1, 'tingkat' => 'X', 'kelas_id' => 10],
+            2 => ['butuh_lab' => 1, 'jurusan_id' => 1, 'tingkat' => 'X', 'kelas_id' => 20],
+            3 => ['butuh_lab' => 1, 'jurusan_id' => 1, 'tingkat' => 'X', 'kelas_id' => 30],
+            4 => ['butuh_lab' => 1, 'jurusan_id' => 1, 'tingkat' => 'X', 'kelas_id' => 40],
+        ];
+        $pool = [1 => [300, 301]]; // 2 labs → ideal 2 days for 4 classes
+
+        $packed = [
+            1 => ['hari_id' => 1],
+            2 => ['hari_id' => 1],
+            3 => ['hari_id' => 2],
+            4 => ['hari_id' => 2],
+        ];
+        $spread = [
+            1 => ['hari_id' => 1],
+            2 => ['hari_id' => 2],
+            3 => ['hari_id' => 3],
+            4 => ['hari_id' => 4],
+        ];
+
+        $penPacked = SchedulingContext::labDayPackPenalty($packed, $units, $pool);
+        $penSpread = SchedulingContext::labDayPackPenalty($spread, $units, $pool);
+
+        $this->assertSame(0.0, $penPacked);
+        $this->assertGreaterThan($penPacked, $penSpread);
+    }
+
+    public function testLabPackHeuristicPrefersPeerDay(): void
+    {
+        $unit = ['butuh_lab' => 1, 'jurusan_id' => 1, 'tingkat' => 'X', 'kelas_id' => 20];
+        $units = [
+            1 => ['butuh_lab' => 1, 'jurusan_id' => 1, 'tingkat' => 'X', 'kelas_id' => 10],
+            2 => $unit,
+        ];
+        $assignments = [
+            1 => ['hari_id' => 1],
+        ];
+        $pool = [1 => [300, 301]];
+
+        $joinDay = SchedulingContext::labPackDayPreferenceScore($unit, 1, $assignments, $units, $pool);
+        $emptyDay = SchedulingContext::labPackDayPreferenceScore($unit, 2, $assignments, $units, $pool);
+
+        $this->assertLessThan($emptyDay, $joinDay);
+    }
+
+    public function testCspLabCandidateScorePrefersKmDay(): void
+    {
+        $unit = [
+            'butuh_lab' => 1, 'kelas_mapel_id' => 103, 'jurusan_id' => 1,
+            'tingkat' => 'X', 'kelas_id' => 10,
+        ];
+        $units = [
+            1 => $unit,
+            2 => $unit,
+            3 => $unit,
+        ];
+        $assignments = [
+            1 => ['hari_id' => 1],
+            2 => ['hari_id' => 1],
+        ];
+        $pool = [1 => [300, 301]];
+
+        $packDay = SchedulingContext::cspLabCandidateScore($unit, 1, 0, $assignments, $units, $pool, 3);
+        $emptyDay = SchedulingContext::cspLabCandidateScore($unit, 2, 0, $assignments, $units, $pool, 3);
+
+        $this->assertLessThan($emptyDay, $packDay);
+        $this->assertSame(2, SchedulingContext::countKmJpOnDay(103, 1, $assignments, $units, 3));
+        $this->assertSame(0, SchedulingContext::countKmJpOnDay(103, 2, $assignments, $units, 3));
+    }
+
+    public function testCspLabKelasMapelPacksMinimalDays(): void
+    {
+        $timeslotsByHari = [];
+        $hariData = [];
+        for ($d = 1; $d <= 5; $d++) {
+            $hariData[] = ['id' => $d, 'nama' => "Hari$d", 'kode' => "H$d", 'urutan' => $d];
+            $slots = [];
+            for ($s = 1; $s <= 4; $s++) {
+                $slots[] = ['id' => $d * 10 + $s, 'jam_ke' => $s, 'tipe' => 'jp'];
+            }
+            $timeslotsByHari[$d] = $slots;
+        }
+        $jpSlotsByHari = SchedulingContext::buildJpSlotsByHari($timeslotsByHari);
+        $mapelRows = [
+            ['id' => 3, 'tipe' => 'kejuruan', 'jurusan_id' => 1, 'bobot_kognitif' => 7],
+        ];
+        $guruPool = SchedulingContext::buildGuruPool(
+            [['guru_id' => 103, 'mapel_id' => 3, 'max_jam_per_minggu' => 40]],
+            $mapelRows
+        );
+
+        $kmId = 103;
+        $units = [];
+        for ($i = 0; $i < 4; $i++) {
+            $uid = $i + 1;
+            $units[$uid] = [
+                'unit_id'          => $uid,
+                'kelas_mapel_id'   => $kmId,
+                'kelas_id'         => 10,
+                'mapel_id'         => 3,
+                'jurusan_id'       => 1,
+                'tingkat'          => 'X',
+                'unit_index'       => $i,
+                'butuh_lab'        => 1,
+                'lab_id'           => 300,
+                'homeroom_id'      => 210,
+                'mapel_tipe'       => 'kejuruan',
+                'mapel_jurusan_id' => 1,
+                'bobot_kognitif'   => 7,
+            ];
+        }
+
+        $engine = [
+            'units'               => $units,
+            'jp_slots_by_hari'    => $jpSlotsByHari,
+            'hari_data'           => $hariData,
+            'guru_pool'           => $guruPool,
+            'guru_blokir'         => [],
+            'homeroom_map'        => [10 => 210],
+            'lab_pool_by_jurusan' => [1 => [300, 301]],
+            'timeout_seconds'     => 30,
+            'csp_max_attempts'    => 12,
+        ];
+
+        $result = (new CSPEngine($engine))->solve();
+        $this->assertCount(0, $result['unplaced']);
+        $this->assertHardConstraints($result['assignments'], $units, $engine);
+
+        $jpPerHari = [];
+        foreach ($result['assignments'] as $unitId => $a) {
+            $h = (int) $a['hari_id'];
+            $jpPerHari[$h] = (int) ($jpPerHari[$h] ?? 0) + 1;
+        }
+
+        $this->assertLessThanOrEqual(2, count($jpPerHari), 'Lab JP should pack onto at most 2 days');
+        $this->assertGreaterThanOrEqual(2, max($jpPerHari), 'At least one day should have 2+ lab JP (not 1-per-day)');
     }
 }

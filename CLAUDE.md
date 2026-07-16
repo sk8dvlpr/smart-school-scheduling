@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **smart-school-scheduling** (1779 symbols, 3311 relationships, 142 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **smart-school-scheduling** (1879 symbols, 3648 relationships, 150 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
@@ -124,7 +124,7 @@ app/Views/components/      → Shared partials (timetable.php)
 
 > **Dropped in v3.1**: practical block rule (old HC-8) — same mapel may span istirahat/kegiatan_khusus; `blok_group` remains for timetable UI merge only.
 
-### Soft Constraints SC-1–SC-11 (GA only, weight scale 1–10)
+### Soft Constraints SC-1–SC-12 (GA only, weight scale 1–10)
 | Code | Weight | Rule |
 |------|--------|------|
 | SC-1 | 9 | Minimize teacher gaps (empty slots between teaching) |
@@ -138,15 +138,16 @@ app/Views/components/      → Shared partials (timetable.php)
 | SC-9 | 4 | Teacher continuity per class — auto-satisfied (penalty 0) |
 | SC-10 | 3 | Rotate first-slot mapel across days |
 | SC-11 | 6 | Balance lab usage across jurusan |
+| SC-12 | 7 | Pack lab-parallel classes (same jurusan+tingkat) onto fewer shared days; spillover OK (`sc_lab_day_pack`) |
 
-> GA config: `sc7_teacher_preference` (SC-7), `sc_lab_preference` (preferensi lab utama vs pool jurusan).
+> GA config: `sc7_teacher_preference` (SC-7), `sc_lab_preference` (preferensi lab utama vs pool jurusan), `sc_lab_day_pack` (SC-12).
 
 Fitness: `1 / (1 + Σ(Wi × Penalty_i_normalized))`, each penalty normalized to 0–1.
 
 ### Algorithm Architecture
 - `ScheduleGenerator.php` — Orchestrator (CSP → GA pipeline)
 - `CSPEngine.php` — Initial valid solution (AC-3 + backtracking + forward checking, MRV/LCV, min-conflict repair)
-- `GAEngine.php` — Optimize SC-1..SC-11 (tournament k=5, OX crossover, elitism, adaptive mutation, HC repair)
+- `GAEngine.php` — Optimize SC-1..SC-12 (tournament k=5, OX crossover, elitism, adaptive mutation, HC repair)
 - `SchedulingContext.php` — Shared helpers (JP slots per hari, guru pool, eligibility, lab pool jurusan)
 - `JadwalPlacementValidator.php` — HC-1..HC-8 validation for manual placement & swap
 - `JadwalManualService.php` — Post-generate manual place/delete/swap jadwal rows (Kurikulum tab Kelas)

@@ -27,7 +27,7 @@ class KelasMapelController extends BaseController
     {
         $kelas = $this->getKelasDetail($kelasId);
         if (! $kelas) {
-            return redirect()->to('/kurikulum/kelas')->with('error', 'Kelas tidak ditemukan.');
+            return redirect()->to('/kurikulum/kelas')->with('error', 'Rombel tidak ditemukan.');
         }
 
         $db = \Config\Database::connect();
@@ -61,7 +61,7 @@ class KelasMapelController extends BaseController
             ->findAll();
 
         return view('kurikulum/kelas/mapel', [
-            'title'           => 'Kurikulum Kelas — ' . $kelas['nama'],
+            'title'           => 'Kurikulum Rombel — ' . $kelas['nama'],
             'kelas'           => $kelas,
             'mapel_list'      => $mapelList,
             'available_mapel' => array_values($availableMapel),
@@ -74,7 +74,7 @@ class KelasMapelController extends BaseController
     {
         $kelas = $this->kelasModel->find($kelasId);
         if (! $kelas) {
-            return redirect()->to('/kurikulum/kelas')->with('error', 'Kelas tidak ditemukan.');
+            return redirect()->to('/kurikulum/kelas')->with('error', 'Rombel tidak ditemukan.');
         }
 
         $data = $this->prepareData($kelas, $this->request->getPost());
@@ -90,7 +90,7 @@ class KelasMapelController extends BaseController
             ->countAllResults() > 0;
 
         if ($exists) {
-            return redirect()->back()->withInput()->with('error', 'Mapel ini sudah ada di kurikulum kelas.');
+            return redirect()->back()->withInput()->with('error', 'Mapel ini sudah ada di kurikulum rombel.');
         }
 
         if (! $this->kelasMapelModel->validate($data)) {
@@ -106,7 +106,7 @@ class KelasMapelController extends BaseController
     {
         $kelas = $this->kelasModel->find($kelasId);
         if (! $kelas) {
-            return redirect()->to('/kurikulum/kelas')->with('error', 'Kelas tidak ditemukan.');
+            return redirect()->to('/kurikulum/kelas')->with('error', 'Rombel tidak ditemukan.');
         }
 
         $row = $this->kelasMapelModel
@@ -190,7 +190,7 @@ class KelasMapelController extends BaseController
         }
 
         if ($mapel['tipe'] === 'kejuruan' && (int) $mapel['jurusan_id'] !== (int) $kelas['jurusan_id']) {
-            return ['error' => 'Mapel kejuruan harus sesuai jurusan kelas (HC7).'];
+            return ['error' => 'Mapel kejuruan harus sesuai jurusan rombel (HC7).'];
         }
 
         if ($data['butuh_lab']) {
@@ -199,7 +199,7 @@ class KelasMapelController extends BaseController
             }
             $lab = $this->ruanganModel->find($data['lab_id']);
             if (! $lab || ($lab['tipe'] ?? '') !== 'lab' || (int) ($lab['jurusan_id'] ?? 0) !== (int) $kelas['jurusan_id']) {
-                return ['error' => 'Lab utama harus lab jurusan kelas ini.'];
+                return ['error' => 'Lab utama harus lab jurusan rombel ini.'];
             }
         } else {
             $data['lab_id'] = null;

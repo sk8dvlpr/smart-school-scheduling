@@ -15,8 +15,17 @@
             <?php endif; ?>
             <?php if ($is_published): ?>
                 <span class="badge bg-success me-2"><i class="bi bi-broadcast"></i> Published</span>
+                <?php
+                    $appr = $log['approval_status'] ?? null;
+                    if ($appr === 'approved'): ?>
+                    <span class="badge bg-primary me-2"><i class="bi bi-check-circle"></i> Disetujui Kepsek</span>
+                <?php elseif ($appr === 'rejected'): ?>
+                    <span class="badge bg-danger me-2"><i class="bi bi-x-circle"></i> Ditolak Kepsek</span>
+                <?php else: ?>
+                    <span class="badge bg-warning text-dark me-2"><i class="bi bi-hourglass-split"></i> Menunggu Acc Kepsek</span>
+                <?php endif; ?>
             <?php else: ?>
-                <form action="<?= base_url('kurikulum/schedule/publish/' . (int) $log['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Publish history ini ke Guru & Kepala Sekolah?<?= $log['status'] === 'partial' ? ' PERINGATAN: status partial (' . $pct . '% terisi).' : '' ?>');">
+                <form action="<?= base_url('kurikulum/schedule/publish/' . (int) $log['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Publish history ini ke Kepala Sekolah untuk ditinjau?<?= $log['status'] === 'partial' ? ' PERINGATAN: status partial (' . $pct . '% terisi).' : '' ?> Guru baru melihat setelah Kepsek menyetujui.');">
                     <?= csrf_field() ?>
                     <button type="submit" class="btn btn-success"><i class="bi bi-broadcast"></i> Publish</button>
                 </form>
@@ -125,10 +134,10 @@
 
 <?php if (!empty($report['fill_report'])): ?>
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-bold">Fill Report per Kelas</div>
+    <div class="card-header bg-white fw-bold">Fill Report per Rombel</div>
     <div class="card-body table-responsive">
         <table class="table table-sm">
-            <thead><tr><th>Kelas</th><th>Detail JP/hari</th></tr></thead>
+            <thead><tr><th>Rombel</th><th>Detail JP/hari</th></tr></thead>
             <tbody>
             <?php foreach ($report['fill_report'] as $kelasNama => $days): ?>
                 <tr>

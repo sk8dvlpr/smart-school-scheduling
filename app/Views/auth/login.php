@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Smart School Scheduling</title>
+    <?php $branding = $branding ?? \App\Libraries\BrandingService::get(); ?>
+    <title>Login - <?= esc($branding['nama_sekolah']) ?></title>
+    <?php if (! empty($branding['logo_url'])): ?>
+        <link rel="icon" href="<?= esc($branding['logo_url']) ?>" type="image/png">
+    <?php endif; ?>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Google Fonts Inter -->
@@ -48,6 +52,15 @@
             background-color: #3730A3;
             border-color: #3730A3;
         }
+        .login-logo {
+            max-height: 64px;
+            max-width: 120px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            background: #fff;
+            border-radius: 8px;
+            padding: 4px;
+        }
     </style>
 </head>
 <body>
@@ -57,7 +70,12 @@
         <div class="col-12 col-md-6 d-flex justify-content-center">
             <div class="card login-card">
                 <div class="login-header">
-                    <h4 class="mb-0 fw-bold"><i class="bi bi-calendar-check"></i> S3 Dashboard</h4>
+                    <?php if (! empty($branding['logo_url'])): ?>
+                        <img src="<?= esc($branding['logo_url']) ?>" alt="Logo" class="login-logo">
+                    <?php else: ?>
+                        <div class="mb-2"><i class="bi bi-calendar-check fs-1"></i></div>
+                    <?php endif; ?>
+                    <h4 class="mb-0 fw-bold"><?= esc($branding['nama_sekolah']) ?></h4>
                     <p class="mb-0 text-white-50 small mt-1">Smart School Scheduling</p>
                 </div>
                 <div class="login-body">
@@ -92,7 +110,7 @@
                         </div>
                     </form>
                     <div class="text-center mt-4 mb-2">
-                        <small class="text-muted">SMK Negeri 1 &copy; <?= date('Y') ?></small>
+                        <small class="text-muted"><?= esc($branding['nama_sekolah']) ?> &copy; <?= date('Y') ?></small>
                     </div>
                 </div>
             </div>
@@ -100,5 +118,6 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

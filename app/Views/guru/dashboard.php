@@ -23,7 +23,7 @@
             <div class="card-body">
                 <i class="bi bi-diagram-3 fs-1 mb-2"></i>
                 <h2 class="fw-bold mb-1"><?= $total_kelas ?></h2>
-                <div class="small text-white-50 text-uppercase">Total Kelas Diajar</div>
+                <div class="small text-white-50 text-uppercase">Total Rombel Diajar</div>
             </div>
         </div>
     </div>
@@ -36,6 +36,11 @@
             <div class="card-body pt-0">
                 <?php if (!$active_ta): ?>
                     <div class="alert alert-warning mb-0">Tahun ajaran belum aktif.</div>
+                <?php elseif (! empty($approval_note)): ?>
+                    <div class="alert alert-info border-0 bg-info-subtle mb-0">
+                        <i class="bi bi-hourglass-split me-1"></i>
+                        <?= esc($approval_note) ?>
+                    </div>
                 <?php elseif (empty($jadwal)): ?>
                     <div class="alert alert-info border-0 bg-info-subtle mb-0">
                         Belum ada jadwal mengajar pada tahun ajaran ini.
@@ -53,7 +58,7 @@
                                 <div>
                                     <h6 class="mb-1 fw-bold"><?= esc($j['mapel_nama']) ?></h6>
                                     <small class="text-muted">
-                                        <i class="bi bi-people-fill me-1"></i> Kelas <?= esc($j['kelas_nama']) ?>
+                                        <i class="bi bi-people-fill me-1"></i> Rombel <?= esc($j['kelas_nama']) ?>
                                         <span class="mx-2">|</span>
                                         <i class="bi bi-geo-alt-fill me-1"></i> <?= esc($j['ruangan_kode']) ?>
                                     </small>
@@ -77,7 +82,9 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <h6 class="fw-bold mb-3">Preview Jadwal Besok</h6>
-                <?php if (empty($jadwal_besok)): ?>
+                <?php if (! empty($approval_note)): ?>
+                    <div class="text-muted"><?= esc($approval_note) ?></div>
+                <?php elseif (empty($jadwal_besok)): ?>
                     <div class="text-muted">Belum ada jadwal untuk besok.</div>
                 <?php else: ?>
                     <?php foreach ($jadwal_besok as $item): ?>

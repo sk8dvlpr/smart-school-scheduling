@@ -40,6 +40,8 @@ $routes->group('kurikulum', ['filter' => 'kurikulum'], function ($routes) {
     $routes->delete('guru/(:num)/mapel/(:num)', 'Kurikulum\GuruMapelController::delete/$1/$2');
     $routes->get('guru/(:num)/hari-blokir', 'Kurikulum\GuruHariBlokirController::index/$1');
     $routes->post('guru/(:num)/hari-blokir', 'Kurikulum\GuruHariBlokirController::update/$1');
+    $routes->get('guru/(:num)/preferensi', 'Kurikulum\GuruPreferensiController::index/$1');
+    $routes->post('guru/(:num)/preferensi', 'Kurikulum\GuruPreferensiController::update/$1');
     $routes->resource('guru', ['controller' => 'Kurikulum\GuruController']);
 
     $routes->get('kelas/(:num)/mapel', 'Kurikulum\KelasMapelController::index/$1');
@@ -49,6 +51,9 @@ $routes->group('kurikulum', ['filter' => 'kurikulum'], function ($routes) {
     $routes->resource('kelas', ['controller' => 'Kurikulum\KelasController']);
 
     $routes->resource('mapel', ['controller' => 'Kurikulum\MapelController']);
+
+    $routes->get('pengaturan', 'Kurikulum\PengaturanController::index');
+    $routes->post('pengaturan', 'Kurikulum\PengaturanController::update');
 
     $routes->get('schedule', 'Kurikulum\ScheduleController::index');
     $routes->post('schedule/generate', 'Kurikulum\ScheduleController::generate');
@@ -78,12 +83,16 @@ $routes->group('guru', ['filter' => 'guru'], static function ($routes) {
     $routes->get('jadwal/export/(:segment)', 'Guru\JadwalController::export/$1');
     $routes->get('preferensi', 'Guru\PreferensiController::index');
     $routes->post('preferensi', 'Guru\PreferensiController::save');
+    $routes->get('hari-blokir', 'Guru\HariBlokirController::index');
+    $routes->post('hari-blokir', 'Guru\HariBlokirController::update');
 });
 
 // Kepala Sekolah routes
 $routes->group('kepala-sekolah', ['filter' => 'kepala_sekolah'], static function ($routes) {
     $routes->get('dashboard', 'DashboardController::kepalaSekolah');
     $routes->get('jadwal', 'KepalaSekolah\JadwalController::index');
+    $routes->post('jadwal/approve', 'KepalaSekolah\JadwalController::approve');
+    $routes->post('jadwal/reject', 'KepalaSekolah\JadwalController::reject');
     $routes->get('jadwal/kelas/(:num)', 'KepalaSekolah\JadwalController::viewByKelas/$1');
     $routes->get('jadwal/guru/(:num)', 'KepalaSekolah\JadwalController::viewByGuru/$1');
     $routes->get('jadwal/ruangan/(:num)', 'KepalaSekolah\JadwalController::viewByRuangan/$1');

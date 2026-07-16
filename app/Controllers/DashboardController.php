@@ -37,8 +37,14 @@ class DashboardController extends BaseController
                 $hariIni = $db->table('hari')->where('urutan', $todayDow)->get()->getRowArray();
                 if ($hariIni) {
                     $jadwalModel = new \App\Models\JadwalModel();
-                    $allJadwal = $jadwalModel->getByGuru($guruId, $activeTaId);
-                    $jadwalHariIni = array_values(array_filter($allJadwal, fn ($j) => (int) $j['hari_id'] === (int) $hariIni['id']));
+                    $logId = $jadwalModel->resolveApprovedScheduleLogId($activeTaId);
+                    if ($logId !== null) {
+                        $allJadwal = $jadwalModel->getByGuru($guruId, $activeTaId, $logId);
+                        $jadwalHariIni = array_values(array_filter(
+                            $allJadwal,
+                            fn ($j) => (int) $j['hari_id'] === (int) $hariIni['id']
+                        ));
+                    }
                 }
             }
         }

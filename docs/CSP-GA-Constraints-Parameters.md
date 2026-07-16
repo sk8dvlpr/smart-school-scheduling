@@ -50,6 +50,7 @@ Bobot menggunakan skala **1–10** (semakin tinggi = semakin diprioritaskan GA).
 | SC-9 | Kontinuitas guru per kelas | **4** | Kenyamanan psikologis siswa |
 | SC-10 | Rotasi/tidak monoton mapel jam pertama | **3** | Variasi, dampak kecil ke kualitas belajar |
 | SC-11 | Load balancing lab/bengkel antar jurusan | **6** | Mencegah kontensi alat/daya antar jurusan |
+| SC-12 | Packing lab paralel (jurusan+tingkat) | **7** | Isi kapasitas lab sejajar di hari yang sama; JP sisa boleh hari lain; bukan HC |
 
 > Total bobot tidak harus = 100; yang penting adalah **rasio relatif** antar constraint. Normalisasi dilakukan di level fungsi penalti, bukan di level bobot mentah.
 
@@ -93,9 +94,11 @@ Ini memastikan tidak ada satu constraint yang mendominasi total fitness hanya ka
 | Metode konsistensi | **Arc Consistency (AC-3)** | Untuk mempersempit domain sebelum backtracking |
 | Algoritma pencarian dasar | **Backtracking + Forward Checking** | Baseline sebelum GA mengambil alih optimasi |
 | Variable ordering heuristic | **MRV (Minimum Remaining Values)** | Prioritaskan variabel dengan domain tersempit dulu (mis. mapel dgn guru terbatas) |
-| Value ordering heuristic | **LCV (Least Constraining Value)** | Pilih nilai yang paling sedikit membatasi variabel lain |
+| Value ordering heuristic | **LCV (Least Constraining Value)** untuk mapel non-lab; **km-packing** untuk `butuh_lab` | Non-lab: sebar JP kelas antar hari (`dayCount`). Lab: kumpulkan JP satu `kelas_mapel` di hari sesedikit mungkin; spillover hanya jika slot/lab/guru penuh. |
 | Repair operator | **Local repair (min-conflict)** setelah crossover/mutasi GA | Memperbaiki kromosom yang melanggar HC akibat operator genetik |
 | Domain awal per variabel | Hasil filtering HC-4, HC-6, HC-7, HC-8 | Domain sudah tersaring sebelum masuk GA |
+
+> **Catatan CSP lab packing:** Value ordering untuk unit `butuh_lab` **tidak** memakai LCV sebaran kelas (`dayCount × 100`). Skor kandidat mengutamakan hari yang sudah berisi JP `kelas_mapel_id` yang sama (`−kmJpOnDay × 500`), lalu peer pack SC-12 antar kelas se-jurusan+tingkat. Tanpa ini, CSP cenderung menempatkan 1 JP lab tiap pagi tiap hari sebelum GA berjalan.
 
 ### 5.2 Parameter GA (Fase Optimasi)
 
@@ -152,8 +155,9 @@ Ini memastikan tidak ada satu constraint yang mendominasi total fitness hanya ka
     "SC-9_teacher_continuity": 4,
     "SC-10_first_slot_rotation": 3,
     "SC-11_lab_load_balance": 6,
+    "SC-12_lab_day_pack": 7,
     "sc_lab_preference": 5
-  }
+}
 }
 ```
 

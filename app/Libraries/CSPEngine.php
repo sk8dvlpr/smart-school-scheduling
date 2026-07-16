@@ -332,8 +332,8 @@ class CSPEngine
 
     /**
      * Ordered, feasible (hari, timeslot, guru) candidates for a unit.
-     * Ordered by LCV: spread across days (fewest class JP that day first),
-     * then earlier slot, then guru with most remaining weekly cap.
+     * Non-lab: LCV spread across days (fewest class JP that day first), then earlier slot.
+     * Lab (butuh_lab): pack same kelas_mapel onto as few days as possible (km-packing heuristic).
      *
      * @return list<array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int,ruangan_id?:int}>
      */
@@ -413,12 +413,24 @@ class CSPEngine
                     continue;
                 }
 
+                $score = $butuhLab
+                    ? SchedulingContext::cspLabCandidateScore(
+                        $unit,
+                        $hariId,
+                        $slotIndex,
+                        $this->assignments,
+                        $this->units,
+                        $this->labPoolByJurusan,
+                        $unitId
+                    )
+                    : ($dayCount * 100 + $slotIndex);
+
                 $candidate = [
                     'hari_id'     => $hariId,
                     'timeslot_id' => $timeslotId,
                     'slot_index'  => $slotIndex,
                     'guru_id'     => $bestGuru,
-                    '_score'      => $dayCount * 100 + $slotIndex,
+                    '_score'      => $score,
                 ];
                 if ($butuhLab && $ruanganId !== null) {
                     $candidate['ruangan_id'] = $ruanganId;
@@ -736,7 +748,7 @@ class CSPEngine
             $fix    = 'Pool lab jurusan penuh — tambah lab jurusan, kurangi JP mapel lab, atau bagi beban antar lab.';
         } elseif (! $anyClassSlotFree) {
             $reason = 'class_over_capacity';
-            $fix    = 'Total JP kelas melebihi kapasitas mingguan — kurangi jam_per_minggu kelas_mapel.';
+            $fix    = 'Total JP rombel melebihi kapasitas mingguan — kurangi jam_per_minggu kelas_mapel.';
         } elseif ($this->isTimedOut()) {
             $reason = 'timeout';
             $fix    = 'Naikkan timeout_seconds atau kurangi beban data.';

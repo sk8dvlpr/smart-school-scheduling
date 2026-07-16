@@ -316,5 +316,184 @@ class SchedulingContext
 
         return null;
     }
+
+    /**
+     * Count how many JP of the same kelas_mapel are already placed on a day.
+     *
+     * @param array<int, array<string, mixed>> $assignments
+     * @param array<int, array<string, mixed>> $units
+     */
+    public static function countKmJpOnDay(
+        int $kmId,
+        int $hariId,
+        array $assignments,
+        array $units,
+        ?int $excludeUnitId = null
+    ): int {
+        $count = 0;
+        foreach ($assignments as $uid => $a) {
+            if ($excludeUnitId !== null && (int) $uid === $excludeUnitId) {
+                continue;
+            }
+            if ((int) ($a['hari_id'] ?? 0) !== $hariId) {
+                continue;
+            }
+            $u = $units[(int) $uid] ?? [];
+            if ((int) ($u['kelas_mapel_id'] ?? 0) === $kmId) {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * CSP value-ordering score for butuh_lab units (lower = better).
+     * Packs JP of the same kelas_mapel onto as few days as possible;
+     * does NOT use kelas-wide dayCount LCV spread.
+     *
+     * @param array<string, mixed> $unit
+     * @param array<int, array<string, mixed>> $assignments
+     * @param array<int, array<string, mixed>> $units
+     * @param array<int, list<int>> $labPoolByJurusan
+     */
+    public static function cspLabCandidateScore(
+        array $unit,
+        int $hariId,
+        int $slotIndex,
+        array $assignments,
+        array $units,
+        array $labPoolByJurusan,
+        ?int $excludeUnitId = null
+    ): int {
+        $kmId = (int) ($unit['kelas_mapel_id'] ?? 0);
+        $kmJpOnDay = self::countKmJpOnDay($kmId, $hariId, $assignments, $units, $excludeUnitId);
+
+        $score = $slotIndex;
+        if ($kmJpOnDay > 0) {
+            $score -= $kmJpOnDay * 500;
+        } else {
+            $score += self::labPackDayPreferenceScore(
+                $unit,
+                $hariId,
+                $assignments,
+                $units,
+                $labPoolByJurusan
+            );
+        }
+
+        return $score;
+    }
+
+    /**
+     * SC-12 CSP heuristic: prefer days where peer classes (same jurusan+tingkat)
+     * already use lab — fill parallel capacity — without making days hard-fail.
+     * Lower score is better (added to candidate _score).
+     *
+     * @param array<string, mixed> $unit
+     * @param array<int, array<string, mixed>> $assignments
+     * @param array<int, array<string, mixed>> $units
+     * @param array<int, list<int>> $labPoolByJurusan
+     */
+    public static function labPackDayPreferenceScore(
+        array $unit,
+        int $hariId,
+        array $assignments,
+        array $units,
+        array $labPoolByJurusan
+    ): int {
+        if ((int) ($unit['butuh_lab'] ?? 0) !== 1) {
+            return 0;
+        }
+
+        $jurId   = (int) ($unit['jurusan_id'] ?? 0);
+        $tingkat = (string) ($unit['tingkat'] ?? '');
+        $kelasId = (int) ($unit['kelas_id'] ?? 0);
+        $poolSize = count($labPoolByJurusan[$jurId] ?? []);
+        if ($poolSize <= 0) {
+            return 0;
+        }
+
+        $peerKelas = [];
+        foreach ($assignments as $uid => $a) {
+            if ((int) ($a['hari_id'] ?? 0) !== $hariId) {
+                continue;
+            }
+            $u = $units[(int) $uid] ?? [];
+            if ((int) ($u['butuh_lab'] ?? 0) !== 1) {
+                continue;
+            }
+            if ((int) ($u['jurusan_id'] ?? 0) !== $jurId) {
+                continue;
+            }
+            if ((string) ($u['tingkat'] ?? '') !== $tingkat) {
+                continue;
+            }
+            $peerKelas[(int) ($u['kelas_id'] ?? 0)] = true;
+        }
+
+        $peers = count($peerKelas);
+        if ($peers === 0) {
+            return 30; // starting a new cluster day is fine but not preferred over packing
+        }
+
+        if (isset($peerKelas[$kelasId])) {
+            return -90; // continue same kelas on an active pack day
+        }
+
+        if ($peers < $poolSize) {
+            return -120; // join a day that still has free parallel lab capacity
+        }
+
+        return 40; // day already filled to pool capacity — prefer other days for remaining classes
+    }
+
+    /**
+     * SC-12 penalty (0..1): lab days more fragmented than needed for (jurusan, tingkat).
+     * ideal_days ≈ ceil(kelas_with_lab / lab_pool_size). Extra spread days raise penalty.
+     *
+     * @param array<int, array<string, mixed>> $schedule unitId => assignment
+     * @param array<int, array<string, mixed>> $units
+     * @param array<int, list<int>> $labPoolByJurusan
+     */
+    public static function labDayPackPenalty(array $schedule, array $units, array $labPoolByJurusan): float
+    {
+        /** @var array<string, array{kelas: array<int, true>, days: array<int, true>, pool: int}> $groups */
+        $groups = [];
+
+        foreach ($schedule as $unitId => $a) {
+            $unit = $units[(int) $unitId] ?? [];
+            if ((int) ($unit['butuh_lab'] ?? 0) !== 1) {
+                continue;
+            }
+            $jurId   = (int) ($unit['jurusan_id'] ?? 0);
+            $tingkat = (string) ($unit['tingkat'] ?? '');
+            $key     = $jurId . '|' . $tingkat;
+            if (! isset($groups[$key])) {
+                $groups[$key] = [
+                    'kelas' => [],
+                    'days'  => [],
+                    'pool'  => max(1, count($labPoolByJurusan[$jurId] ?? [])),
+                ];
+            }
+            $groups[$key]['kelas'][(int) ($unit['kelas_id'] ?? 0)] = true;
+            $groups[$key]['days'][(int) ($a['hari_id'] ?? 0)] = true;
+        }
+
+        if ($groups === []) {
+            return 0.0;
+        }
+
+        $sum = 0.0;
+        foreach ($groups as $g) {
+            $kelasCount = count($g['kelas']);
+            $daysUsed   = count($g['days']);
+            $idealDays  = (int) max(1, (int) ceil($kelasCount / $g['pool']));
+            $extra      = max(0, $daysUsed - $idealDays);
+            $sum += $extra / max(1, $kelasCount);
+        }
+
+        return min(1.0, $sum / count($groups));
+    }
 }
-
+

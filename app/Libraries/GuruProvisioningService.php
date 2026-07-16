@@ -72,6 +72,10 @@ class GuruProvisioningService
             throw new RuntimeException('User harus berrole guru atau kurikulum.');
         }
 
+        if ((int) ($user['is_admin'] ?? 0) === 1) {
+            throw new RuntimeException('User kurikulum admin tidak boleh memiliki profil mengajar.');
+        }
+
         if ($this->guruModel->where('user_id', $userId)->first()) {
             throw new RuntimeException('User ini sudah memiliki profil guru.');
         }
@@ -102,6 +106,10 @@ class GuruProvisioningService
         $this->assertUserIdentity($userFields);
 
         $existingUser = $this->userModel->where('email', $userFields['email'])->first();
+
+        if ($existingUser && (int) ($existingUser['is_admin'] ?? 0) === 1) {
+            throw new RuntimeException('User kurikulum admin tidak boleh memiliki profil mengajar: ' . $userFields['email']);
+        }
 
         $db = Database::connect();
         $db->transStart();
@@ -136,6 +144,11 @@ class GuruProvisioningService
         $guru = $this->guruModel->find($guruId);
         if (! $guru) {
             throw new RuntimeException('Profil guru tidak ditemukan.');
+        }
+
+        $linkedUser = $this->userModel->find((int) $guru['user_id']);
+        if ($linkedUser && (int) ($linkedUser['is_admin'] ?? 0) === 1) {
+            throw new RuntimeException('User kurikulum admin tidak boleh memiliki profil mengajar.');
         }
 
         $userFields = self::normalizeUserFields($userFields);
@@ -199,6 +212,7 @@ class GuruProvisioningService
             'password'             => 'password123',
             'must_change_password' => 1,
             'is_active'            => 1,
+            'is_admin'             => 0,
         ]);
 
         if (! $this->userModel->validate($userData)) {

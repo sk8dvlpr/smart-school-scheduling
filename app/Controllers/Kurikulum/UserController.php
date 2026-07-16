@@ -17,8 +17,9 @@ class UserController extends BaseController
     public function index(): string
     {
         return view('kurikulum/users/index', [
-            'title' => 'Manajemen User',
-            'users' => $this->userModel->orderBy('id', 'DESC')->findAll(),
+            'title'    => 'Manajemen User',
+            'users'    => $this->userModel->orderBy('id', 'DESC')->findAll(),
+            'is_admin' => UserModel::sessionIsKurikulumAdmin(),
         ]);
     }
 
@@ -28,12 +29,17 @@ class UserController extends BaseController
         $data['is_active'] = isset($data['is_active']) ? 1 : 0;
         $data['password'] = 'password123';
         $data['must_change_password'] = 1;
+        $data['is_admin'] = $this->resolveIsAdminFlag($data['role'] ?? '', null);
 
         if (($data['role'] ?? '') === 'guru') {
             return redirect()->back()->withInput()->with(
                 'error',
                 'Untuk guru yang mengajar, gunakan modul Manajemen Guru.',
             );
+        }
+
+        if ((int) $data['is_admin'] === 1 && ($data['role'] ?? '') !== 'kurikulum') {
+            return redirect()->back()->withInput()->with('error', 'Flag admin hanya untuk role Kurikulum.');
         }
 
         if (! $this->userModel->validate($data)) {
@@ -64,7 +70,11 @@ class UserController extends BaseController
         $data['is_active'] = isset($data['is_active']) ? 1 : 0;
 
         $existing = $this->userModel->find($id);
-        if ($existing && $existing['role'] === 'guru') {
+        if (! $existing) {
+            return redirect()->to('/kurikulum/users')->with('error', 'User tidak ditemukan.');
+        }
+
+        if ($existing['role'] === 'guru') {
             return redirect()->back()->withInput()->with(
                 'error',
                 'User dengan role guru dikelola melalui modul Manajemen Guru.',
@@ -78,11 +88,41 @@ class UserController extends BaseController
             );
         }
 
+        $data['is_admin'] = $this->resolveIsAdminFlag($data['role'] ?? '', $existing);
+
+        if ((int) $data['is_admin'] === 1) {
+            if (($data['role'] ?? '') !== 'kurikulum') {
+                return redirect()->back()->withInput()->with('error', 'Flag admin hanya untuk role Kurikulum.');
+            }
+            if ($this->userModel->hasTeachingProfile($id)) {
+                return redirect()->back()->withInput()->with(
+                    'error',
+                    'Tidak dapat mengaktifkan admin: user ini sudah punya profil mengajar. Hapus profil guru terlebih dahulu.',
+                );
+            }
+        }
+
+        // Prevent demoting own admin flag (lock self out of pengaturan/reset).
+        if ((int) session()->get('user_id') === $id
+            && UserModel::sessionIsKurikulumAdmin()
+            && (int) $data['is_admin'] !== 1
+        ) {
+            return redirect()->back()->withInput()->with(
+                'error',
+                'Tidak dapat menonaktifkan flag admin pada akun Anda sendiri.',
+            );
+        }
+
         if (! $this->userModel->validate($data)) {
             return redirect()->back()->withInput()->with('errors', $this->userModel->errors());
         }
 
         $this->userModel->update($id, $data);
+
+        // Keep current session in sync if editing self.
+        if ((int) session()->get('user_id') === $id) {
+            session()->set('is_admin', (int) $data['is_admin']);
+        }
 
         return redirect()->to('/kurikulum/users')->with('success', 'User berhasil diperbarui.');
     }
@@ -110,6 +150,10 @@ class UserController extends BaseController
 
     public function resetPassword(int $id)
     {
+        if (! UserModel::sessionIsKurikulumAdmin()) {
+            return redirect()->to('/kurikulum/users')->with('error', 'Hanya kurikulum admin yang dapat mereset password.');
+        }
+
         if ((int) session()->get('user_id') === $id) {
             return redirect()->to('/kurikulum/users')->with('error', 'Gunakan menu Profil untuk mengganti password sendiri.');
         }
@@ -133,5 +177,23 @@ class UserController extends BaseController
         $data['email'] = strtolower(trim($data['email'] ?? ''));
 
         return $data;
+    }
+
+    /**
+     * Only kurikulum admins can set/change is_admin. Non-admins keep existing value.
+     *
+     * @param array<string, mixed>|null $existing
+     */
+    private function resolveIsAdminFlag(string $role, ?array $existing): int
+    {
+        if ($role !== 'kurikulum') {
+            return 0;
+        }
+
+        if (! UserModel::sessionIsKurikulumAdmin()) {
+            return (int) ($existing['is_admin'] ?? 0);
+        }
+
+        return $this->request->getPost('is_admin') ? 1 : 0;
     }
 }

@@ -157,7 +157,7 @@
             <div class="accordion-item">
                 <h2 class="accordion-header">
                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#guideSc">
-                        Bobot Soft Constraint (SC-1 s/d SC-11)
+                        Bobot Soft Constraint (SC-1 s/d SC-12)
                     </button>
                 </h2>
                 <div id="guideSc" class="accordion-collapse collapse" data-bs-parent="#paramGuideAccordion">
@@ -185,8 +185,8 @@
                                     </tr>
                                     <tr>
                                         <td class="fw-medium">SC-2</td>
-                                        <td>Minim gap jadwal kelas (siswa).</td>
-                                        <td>Kelas lebih padat per hari; siswa kurang bolong di tengah hari.</td>
+                                        <td>Minim gap jadwal rombel (siswa).</td>
+                                        <td>Rombel lebih padat per hari; siswa kurang bolong di tengah hari.</td>
                                         <td>Siswa lebih sering punya slot kosong.</td>
                                     </tr>
                                     <tr>
@@ -227,7 +227,7 @@
                                     </tr>
                                     <tr>
                                         <td class="fw-medium">SC-9</td>
-                                        <td>Satu guru konsisten per kelas–mapel.</td>
+                                        <td>Satu guru konsisten per rombel–mapel.</td>
                                         <td>Lebih ketat mempertahankan guru yang sama.</td>
                                         <td>Lebih toleran jika guru berganti (jarang terjadi).</td>
                                     </tr>
@@ -242,6 +242,12 @@
                                         <td>Seimbangkan pemakaian lab antar jurusan.</td>
                                         <td>Lab tidak didominasi satu jurusan.</td>
                                         <td>Satu jurusan bisa memonopoli lab.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-medium">SC-12</td>
+                                        <td>Packing lab paralel: rombel se-tingkat+jurusan mengisi lab pada hari yang sama (contoh X TKJ 1&amp;2 Kamis; X TKJ 3&amp;4 hari lain). JP sisa boleh pindah hari. Bukan hard constraint.</td>
+                                        <td>Lab lebih terklaster per hari; parallel capacity terisi terlebih dahulu.</td>
+                                        <td>Bobot 0 = diabaikan; lab JP lebih tersebar antar hari.</td>
                                     </tr>
                                     <tr>
                                         <td class="fw-medium">Lab preferensi</td>
