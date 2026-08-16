@@ -95,3 +95,7 @@ _modules/*
 /api/
 .vagrant
 Vagrantfile
+
+
+.opencode/*
+opencode.json

@@ -436,7 +436,7 @@ class ScheduleGenerator
 
         $solverConfig = [
             'timeout_seconds'  => max(15, (int) ($config['timeout_seconds'] ?? 300)),
-            'csp_max_attempts' => max(1, (int) ($config['csp_max_attempts'] ?? 8)),
+            'csp_max_attempts' => max(1, (int) ($config['csp_max_attempts'] ?? 12)),
         ];
 
         $engineData = [

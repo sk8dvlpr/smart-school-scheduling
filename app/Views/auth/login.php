@@ -297,6 +297,9 @@
                     <div class="login-input-group">
                         <span class="login-input-icon"><i class="bi bi-key"></i></span>
                         <input type="password" class="form-control" id="password" name="password" required placeholder="Masukkan password" autocomplete="current-password">
+                        <button type="button" class="btn btn-link text-muted px-3 text-decoration-none shadow-none" id="togglePassword" style="border-left: 1px solid var(--login-border); border-radius: 0;">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -311,5 +314,21 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('togglePassword').addEventListener('click', function (e) {
+        const passwordInput = document.getElementById('password');
+        const icon = this.querySelector('i');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    });
+</script>
 </body>
 </html>

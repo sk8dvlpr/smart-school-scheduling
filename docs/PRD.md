@@ -689,7 +689,7 @@ erDiagram
 | `csp_variable_ordering` | MRV | Minimum Remaining Values |
 | `csp_value_ordering` | LCV | Least Constraining Value |
 | `csp_repair_strategy` | min_conflict | Repair operator setelah crossover/mutasi |
-| `csp_max_attempts` | 8 | Retry dengan urutan variabel berbeda |
+| `csp_max_attempts` | 12 | Retry dengan urutan variabel berbeda |
 
 **GA (Fase 2):**
 
@@ -966,7 +966,7 @@ Setiap unit perlu assignment: `(hari, timeslot, guru_id, ruangan_id)`.
 | SC-6 | Beban mengajar guru seimbang per hari | 7 | Cegah guru terlalu padat di satu hari (menggantikan eks-HC9) |
 | SC-7 | Preferensi hari/jam guru | 5 | `guru_preferensi` + UI Guru + GA penalty |
 | SC-8 | Minim perpindahan ruang berurutan | 5 | Kurangi jumlah perpindahan kelas ke lab |
-| SC-9 | Kontinuitas guru per kelas | 4 | Otomatis terpenuhi (1 guru per `kelas_mapel`) — penalti 0 |
+| SC-9 | Kontinuitas guru per kelas | 4 | Delayed guru lock: attempt 1 CSP bebas memilih guru (mixed-guru per `kelas_mapel` mungkin); lock aktif mulai attempt 2+ dan saat repair; GA minimalkan mixed-guru via penalty |
 | SC-10 | Rotasi/tidak monoton mapel jam pertama | 3 | Variasi mapel di jam pertama antar hari |
 | SC-11 | Load balancing lab/bengkel antar jurusan | 6 | Cegah kontensi pemakaian lab antar jurusan |
 | SC-12 | Packing lab paralel (jurusan+tingkat) | 7 | Isi lab sejajar di hari yang sama untuk kelas se-tingkat+jurusan; JP sisa boleh hari lain; **bukan HC** |

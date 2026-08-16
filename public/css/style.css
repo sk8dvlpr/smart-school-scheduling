@@ -34,6 +34,9 @@ body.dark-mode {
     color: #475569;
     transition: var(--transition);
     box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .dark-mode #sidebar {
@@ -42,14 +45,71 @@ body.dark-mode {
 }
 
 #sidebar .sidebar-header {
-    padding: 20px;
+    padding: 24px 20px 20px;
     background: var(--primary-color);
     color: white;
+    border-bottom: 3px solid var(--primary-hover);
+}
+
+/* Sidebar brand */
+.sidebar-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebar-logo-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    flex-shrink: 0;
+}
+
+.sidebar-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.sidebar-brand-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.3;
     text-align: center;
+    word-break: break-word;
 }
 
 #sidebar ul.components {
     padding: 20px 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Scrollbar tipis agar tidak mengganggu tampilan */
+#sidebar ul.components::-webkit-scrollbar {
+    width: 4px;
+}
+#sidebar ul.components::-webkit-scrollbar-track {
+    background: transparent;
+}
+#sidebar ul.components::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+}
+#sidebar ul.components::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+}
+.dark-mode #sidebar ul.components::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+.dark-mode #sidebar ul.components::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 #sidebar ul p {

@@ -81,17 +81,39 @@
     <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="fw-bold mb-3">Preview Jadwal Besok</h6>
+                <h6 class="fw-bold mb-3"><i class="bi bi-calendar-event me-2"></i>Preview Jadwal Besok</h6>
                 <?php if (! empty($approval_note)): ?>
                     <div class="text-muted"><?= esc($approval_note) ?></div>
                 <?php elseif (empty($jadwal_besok)): ?>
-                    <div class="text-muted">Belum ada jadwal untuk besok.</div>
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-moon-stars fs-2 mb-2 d-block"></i>
+                        Belum ada jadwal untuk besok.
+                    </div>
                 <?php else: ?>
-                    <?php foreach ($jadwal_besok as $item): ?>
-                        <div class="mb-2">
-                            <strong><?= esc($item['mapel_nama']) ?></strong> - <?= esc($item['kelas_nama']) ?> (Jam ke-<?= esc($item['jam_ke']) ?>)
-                        </div>
-                    <?php endforeach; ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 80px;">Jam Ke</th>
+                                    <th style="width: 120px;">Waktu</th>
+                                    <th>Mata Pelajaran</th>
+                                    <th>Kelas</th>
+                                    <th>Ruangan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($jadwal_besok as $item): ?>
+                                <tr>
+                                    <td><span class="badge bg-primary rounded-pill">Jam ke-<?= esc($item['jam_ke']) ?></span></td>
+                                    <td class="text-muted small"><?= substr($item['waktu_mulai'], 0, 5) ?> - <?= substr($item['waktu_selesai'], 0, 5) ?></td>
+                                    <td class="fw-semibold"><?= esc($item['mapel_nama']) ?></td>
+                                    <td><?= esc($item['kelas_nama']) ?></td>
+                                    <td><i class="bi bi-geo-alt-fill text-muted me-1"></i><?= esc($item['ruangan_kode']) ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

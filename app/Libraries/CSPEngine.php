@@ -30,7 +30,7 @@ class CSPEngine
 
     protected float $startTime = 0.0;
     protected int $timeoutSeconds = 300;
-    protected int $maxAttempts = 8;
+    protected int $maxAttempts = 12;
 
     /** @var list<int> */
     protected array $hariIds = [];
@@ -52,8 +52,21 @@ class CSPEngine
     protected array $kelasDayCount = [];
     /** @var array<int, int> kelas_mapel_id => locked guru_id (SC-9) */
     protected array $kelasMapelGuruLock = [];
+    /**
+     * Master switch for the SC-9 guru lock. Disabled on solve() attempt 1 so
+     * the solver can freely pick the best guru per kelas_mapel; re-enabled from
+     * attempt 2 onwards (and during repair) to keep solutions stable.
+     * Default true keeps the public API (canAssignUnit/candidatesForUnit)
+     * behaving exactly like the old always-on lock.
+     */
+    protected bool $lockGuruEnabled = true;
     /** @var array<int, array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int,ruangan_id?:int}> */
     protected array $seedAssignments = [];
+
+    /** Jumlah evict sukses oleh repair PASS 2 (di-reset per repairSweepAdvanced). */
+    protected int $repairEvictCount = 0;
+    /** Jumlah swap/relocate sukses oleh repair PASS 3 (di-reset per repairSweepAdvanced). */
+    protected int $repairSwapCount = 0;
 
     public function __construct(array $data)
     {
@@ -65,7 +78,7 @@ class CSPEngine
         $this->homeroomMap         = $data['homeroom_map'] ?? [];
         $this->labPoolByJurusan    = $data['lab_pool_by_jurusan'] ?? [];
         $this->timeoutSeconds      = max(15, (int) ($data['timeout_seconds'] ?? 300));
-        $this->maxAttempts         = max(1, (int) ($data['csp_max_attempts'] ?? 8));
+        $this->maxAttempts         = max(1, (int) ($data['csp_max_attempts'] ?? 12));
         $this->seedAssignments     = $data['seed_assignments'] ?? [];
 
         foreach ($this->hariData as $h) {
@@ -98,16 +111,21 @@ class CSPEngine
         $best = null;
         $bestUnplaced = PHP_INT_MAX;
         $attemptsRun  = 0;
+        /** @var array<int, array<int, int>> attempt => [kelas_id => jumlah unplaced] */
+        $attemptHistory = [];
 
         for ($attempt = 1; $attempt <= $this->maxAttempts; $attempt++) {
             if ($this->isTimedOut()) {
                 break;
             }
             $attemptsRun = $attempt;
+            // Delayed guru lock (SC-9): attempt 1 is fully flexible, attempts 2+
+            // lock the guru per kelas_mapel for stable solutions.
+            $this->lockGuruEnabled = ($attempt >= 2);
             $this->resetState();
             $this->applySeedAssignments();
 
-            $classOrder = $this->buildClassOrder(array_keys($grouped), $pressures, $attempt);
+            $classOrder = $this->buildClassOrder(array_keys($grouped), $pressures, $attempt, $attemptHistory[$attempt - 1] ?? []);
             foreach ($classOrder as $kelasId) {
                 if ($this->isTimedOut()) {
                     break;
@@ -117,6 +135,14 @@ class CSPEngine
 
             $unplacedIds = $this->collectUnplacedIds();
             $countUnplaced = count($unplacedIds);
+
+            // Track per-class unplaced counts for smart re-ordering next attempt.
+            $kelasUnplaced = [];
+            foreach ($unplacedIds as $uid) {
+                $kid = (int) $this->units[$uid]['kelas_id'];
+                $kelasUnplaced[$kid] = ($kelasUnplaced[$kid] ?? 0) + 1;
+            }
+            $attemptHistory[$attempt] = $kelasUnplaced;
 
             if ($countUnplaced < $bestUnplaced) {
                 $bestUnplaced = $countUnplaced;
@@ -142,7 +168,9 @@ class CSPEngine
         } else {
             $this->resetState();
         }
-        $this->repairSweep($best['unplaced']);
+        // Repair & GA phase behave like today: guru lock fully enabled.
+        $this->lockGuruEnabled = true;
+        $this->repairSweepAdvanced($best['unplaced']);
 
         $unplacedIds = $this->collectUnplacedIds();
         $unplaced    = [];
@@ -171,7 +199,7 @@ class CSPEngine
         $ordered = $this->orderUnits($unitIds, $attempt);
 
         // Node budget scales with class size; loose constraints keep depth shallow.
-        $budget = max(2000, count($ordered) * 40);
+        $budget = max(8000, count($ordered) * 150);
         $snapshot = $this->snapshotState();
 
         if ($this->backtrack($ordered, 0, $budget)) {
@@ -209,7 +237,7 @@ class CSPEngine
             return $this->backtrack($units, $i + 1, $budget);
         }
 
-        $candidates = $this->candidateAssignments($unitId, 12);
+        $candidates = $this->candidateAssignments($unitId, 24);
         foreach ($candidates as $cand) {
             $this->assign($unitId, $cand);
             if ($this->backtrack($units, $i + 1, $budget)) {
@@ -257,9 +285,27 @@ class CSPEngine
     /**
      * @return list<array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int}>
      */
-    public function candidatesForUnit(int $unitId, int $limit = 12): array
+    public function candidatesForUnit(int $unitId, int $limit = 24): array
     {
         return $this->candidateAssignments($unitId, $limit);
+    }
+
+    /**
+     * Total evict-and-reinsert yang berhasil dieksekusi repair PASS 2
+     * pada solve() terakhir (0 jika tidak pernah dipanggil / tidak ada evict).
+     */
+    public function getRepairEvictCount(): int
+    {
+        return $this->repairEvictCount;
+    }
+
+    /**
+     * Total relocate/swap yang berhasil dieksekusi repair PASS 3
+     * pada solve() terakhir (0 jika tidak pernah dipanggil / tidak ada swap).
+     */
+    public function getRepairSwapCount(): int
+    {
+        return $this->repairSwapCount;
     }
 
     protected function applySeedAssignments(): void
@@ -335,9 +381,16 @@ class CSPEngine
      * Non-lab: LCV spread across days (fewest class JP that day first), then earlier slot.
      * Lab (butuh_lab): pack same kelas_mapel onto as few days as possible (km-packing heuristic).
      *
+     * $allowBlocked=true HANYA untuk repair pass (PASS 2/3 evict/relocate):
+     * okupansi HC-1/HC-2/HC-3 di-skip sehingga kandidat boleh sedang
+     * terblokir unit lain (blocker bisa di-evict). Keamanan HC tetap dijamin
+     * via canAssign() setelah blocker dilepas. Caller normal (backtrack,
+     * firstCandidate, candidatesForUnit) memakai default false — perilaku
+     * tidak berubah.
+     *
      * @return list<array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int,ruangan_id?:int}>
      */
-    protected function candidateAssignments(int $unitId, int $limit): array
+    protected function candidateAssignments(int $unitId, int $limit, bool $allowBlocked = false): array
     {
         $unit     = $this->units[$unitId];
         $kelasId  = (int) $unit['kelas_id'];
@@ -348,6 +401,9 @@ class CSPEngine
         $kmDayLab = $butuhLab
             ? SchedulingContext::buildKmDayLabFromAssignments($this->assignments, $this->units, $unitId)
             : [];
+        // Kandidat repair ($allowBlocked) mengabaikan okupansi lab — blocker
+        // lab (HC-3) boleh diusir; kandidat normal memakai labSlot aktual.
+        $labSlotSource = $allowBlocked ? [] : $this->labSlot;
 
         $out = [];
         foreach ($this->hariIds as $hariId) {
@@ -374,7 +430,7 @@ class CSPEngine
                 $timeslotId = (int) $slot['id'];
                 $slotIndex  = (int) $slot['slot_index'];
 
-                if (isset($this->kelasSlot[$kelasId][$hariId][$timeslotId])) {
+                if (! $allowBlocked && isset($this->kelasSlot[$kelasId][$hariId][$timeslotId])) {
                     continue; // HC-2
                 }
 
@@ -387,7 +443,7 @@ class CSPEngine
                         (int) ($unit['lab_id'] ?? 0),
                         (int) $unit['jurusan_id'],
                         $this->labPoolByJurusan,
-                        $this->labSlot,
+                        $labSlotSource,
                         $kmDayLab,
                         null
                     );
@@ -400,7 +456,7 @@ class CSPEngine
                 $bestGuru = null;
                 $bestCap  = -1;
                 foreach ($eligible as $g) {
-                    if (isset($this->guruSlot[$g][$hariId][$timeslotId])) {
+                    if (! $allowBlocked && isset($this->guruSlot[$g][$hariId][$timeslotId])) {
                         continue;
                     }
                     $cap = SchedulingContext::remainingCap($g, $mapelId, $this->guruPool, $this->guruMapelAssigned);
@@ -473,6 +529,265 @@ class CSPEngine
         }
     }
 
+    /**
+     * Multi-pass min-conflict repair sweep (v3.2):
+     *   PASS 1: greedy (repairSweep)
+     *   PASS 2: evict-and-reinsert — usir unit blocking slot terbaik, re-place unit korban
+     *   PASS 3: relocate — pindahkan blocker ke slot lain untuk membuka slot unit target
+     * Semua mutasi lewat assign()/unassign(), semua validasi via canAssign(),
+     * kegagalan selalu di-rollback penuh, dan semua loop hormati isTimedOut().
+     *
+     * @param list<int> $unplacedIds
+     */
+    protected function repairSweepAdvanced(array $unplacedIds): void
+    {
+        // Counter repair pass di-reset agar bisa dijadikan bukti eksekusi
+        // PASS 2/3 pada solve() terakhir (dipakai unit test + debugging).
+        $this->repairEvictCount = 0;
+        $this->repairSwapCount  = 0;
+
+        $this->repairSweep($unplacedIds);                    // PASS 1: greedy
+        $unplaced = $this->collectUnplacedIds();
+        if ($unplaced === [] || $this->isTimedOut()) {
+            return;
+        }
+
+        $rounds = 0;
+        while ($rounds < 2 && $unplaced !== [] && ! $this->isTimedOut()) {
+            $rounds++;
+            $before = count($unplaced);
+            $this->repairEvictAndReinsert($unplaced);        // PASS 2
+            $unplaced = $this->collectUnplacedIds();
+            if ($unplaced === [] || $this->isTimedOut()) {
+                break;
+            }
+            $this->repairRelocateSwap($unplaced);            // PASS 3
+            $unplaced = $this->collectUnplacedIds();
+            if (count($unplaced) >= $before) {
+                break;                                       // tidak ada progres → stop
+            }
+        }
+    }
+
+    /**
+     * PASS 2: untuk setiap unit yang masih stuck, coba "usir" unit yang
+     * menempati slot terbaik (evict), tempatkan unit target, lalu re-place
+     * unit korban ke slot lain. Korban yang gagal di-re-place dikembalikan
+     * ke posisi semula (rollback penuh).
+     *
+     * Catatan desain: enumerasi memakai rawCandidateSlots() (termasuk slot yang
+     * sedang terblokir) — candidateAssignments() hanya menghasilkan kandidat
+     * bebas-blokir sehingga tidak bisa dipakai untuk evict.
+     *
+     * @param list<int> $unplaced
+     */
+    protected function repairEvictAndReinsert(array $unplaced): void
+    {
+        $evicted = [];
+        $ops     = 0;
+        $maxOps  = min(60, count($unplaced) * 3);
+
+        foreach ($unplaced as $unitId) {
+            $unitId = (int) $unitId;
+            if (isset($this->assignments[$unitId]) || $this->isTimedOut() || $ops >= $maxOps) {
+                continue;
+            }
+            $cand = $this->firstCandidate($unitId);
+            if ($cand !== null) {
+                $this->assign($unitId, $cand);
+                continue;
+            }
+
+            foreach ($this->rawCandidateSlots($unitId, 24) as $c) {
+                $blockers = $this->blockingUnits($unitId, $c);
+                if ($blockers === []) {
+                    $this->assign($unitId, $c);
+                    break;
+                }
+
+                $victim = $this->pickEvictVictim($unitId, $blockers, $evicted);
+                if ($victim === null) {
+                    continue;
+                }
+
+                $victimCand = $this->assignments[$victim];
+                $this->unassign($victim);
+                $evicted[$victim] = true;
+                $ops++;
+                if (! $this->canAssign($unitId, $c)) {
+                    $this->assign($victim, $victimCand);
+                    continue;
+                }
+                $this->assign($unitId, $c);
+                $replacement = $this->firstCandidate($victim);
+                if ($replacement !== null && $this->canAssign($victim, $replacement)) {
+                    $this->assign($victim, $replacement);
+                    $this->repairEvictCount++; // evict sukses: unit terpasang + korban di-re-place
+                    break; // sukses: unit terpasang + korban di-re-place
+                }
+                // Korban tidak bisa di-re-place → rollback penuh, coba kandidat lain.
+                $this->unassign($unitId);
+                $this->assign($victim, $victimCand);
+            }
+        }
+    }
+
+    /**
+     * PASS 3: untuk setiap unit yang masih stuck, coba pindahkan (relocate)
+     * satu blocker ke slot lain agar slot target terbuka — bukan swap simultan.
+     *
+     * @param list<int> $unplaced
+     */
+    protected function repairRelocateSwap(array $unplaced): void
+    {
+        $ops    = 0;
+        $maxOps = min(60, count($unplaced) * 3);
+
+        foreach ($unplaced as $unitId) {
+            $unitId = (int) $unitId;
+            if (isset($this->assignments[$unitId]) || $this->isTimedOut() || $ops >= $maxOps) {
+                continue;
+            }
+            foreach ($this->rawCandidateSlots($unitId, 24) as $c) {
+                $blockers = $this->blockingUnits($unitId, $c);
+                if ($blockers === []) {
+                    $this->assign($unitId, $c);
+                    break;
+                }
+                foreach ($blockers as $victim) {
+                    $victim = (int) $victim;
+                    if ($this->units[$victim]['kelas_mapel_id'] === $this->units[$unitId]['kelas_mapel_id']) {
+                        continue;
+                    }
+                    $victimCand = $this->assignments[$victim];
+                    $this->unassign($victim);
+                    $ops++;
+                    // Validasi ulang setelah blocker dilepas; gagal → rollback.
+                    if (! $this->canAssign($unitId, $c)) {
+                        $this->assign($victim, $victimCand);
+                        continue;
+                    }
+                    $this->assign($unitId, $c);
+                    $placed = false;
+                    foreach ($this->candidateAssignments($victim, 24) as $vc) {
+                        if ($this->canAssign($victim, $vc)) {
+                            $this->assign($victim, $vc);
+                            $placed = true;
+                            $this->repairSwapCount++; // relocate/swap sukses
+                            break;
+                        }
+                    }
+                    if (! $placed) {
+                        // Korban tidak punya slot lain → rollback penuh.
+                        $this->unassign($unitId);
+                        $this->assign($victim, $victimCand);
+                    } else {
+                        continue 2;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Enumerasi (hari, timeslot, guru) untuk unit TANPA filter okupansi
+     * (HC-1/HC-2/HC-3 dilewati) — kandidat boleh sedang terblokir unit lain.
+     * Khusus dipakai repair pass (evict/relocate) agar blocker bisa diusir;
+     * keamanan HC tetap dijamin via canAssign() setelah blocker dilepas.
+     * Eligibility HC-4/HC-6/HC-7 dan lab pool jurusan tetap dihormati.
+     *
+     * Thin wrapper di atas candidateAssignments($unitId, $limit, $allowBlocked=true).
+     *
+     * @return list<array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int,ruangan_id?:int}>
+     */
+    protected function rawCandidateSlots(int $unitId, int $limit): array
+    {
+        return $this->candidateAssignments($unitId, $limit, true);
+    }
+
+    /**
+     * Unit-unit yang saat ini menempati (hari, timeslot) sama dengan $cand dan
+     * memblokir placement via HC-1 (guru sama), HC-2 (kelas sama), atau HC-3
+     * (ruangan lab sama).
+     *
+     * @param array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int,ruangan_id?:int} $cand
+     * @return list<int>
+     */
+    protected function blockingUnits(int $unitId, array $cand): array
+    {
+        $unit      = $this->units[$unitId];
+        $kelasId   = (int) $unit['kelas_id'];
+        $guruId    = (int) $cand['guru_id'];
+        $hariId    = (int) $cand['hari_id'];
+        $tsId      = (int) $cand['timeslot_id'];
+        $ruanganId = (int) ($cand['ruangan_id'] ?? 0);
+
+        $blockers = [];
+        foreach ($this->assignments as $otherId => $a) {
+            $otherId = (int) $otherId;
+            if ($otherId === $unitId) {
+                continue;
+            }
+            if ((int) $a['hari_id'] !== $hariId || (int) $a['timeslot_id'] !== $tsId) {
+                continue;
+            }
+            $blocked = (int) $a['guru_id'] === $guruId; // HC-1
+            if (! $blocked && (int) $this->units[$otherId]['kelas_id'] === $kelasId) {
+                $blocked = true;                        // HC-2
+            }
+            if (! $blocked && $ruanganId > 0 && (int) ($a['ruangan_id'] ?? 0) === $ruanganId) {
+                $blocked = true;                        // HC-3 (ruangan lab sama)
+            }
+            if ($blocked) {
+                $blockers[] = $otherId;
+            }
+        }
+
+        return $blockers;
+    }
+
+    /**
+     * Pilih korban terbaik untuk di-evict di antara blocker:
+     * (1) BUKAN unit dari kelas_mapel yang sama dengan unit target (urutan
+     *     mengajar satu kelas_mapel dipertahankan — di-evict terakhir),
+     * (2) unitScarcity() terkecil (paling mudah di-re-place),
+     * (3) belum pernah di-evict di pass ini.
+     *
+     * @param list<int> $blockers
+     * @param array<int, true> $evicted
+     */
+    protected function pickEvictVictim(int $unitId, array $blockers, array $evicted): ?int
+    {
+        $targetKm = (int) ($this->units[$unitId]['kelas_mapel_id'] ?? 0);
+
+        $candidates = [];
+        foreach ($blockers as $bid) {
+            $bid = (int) $bid;
+            if (isset($evicted[$bid])) {
+                continue;
+            }
+            $candidates[] = [
+                'id'       => $bid,
+                'sameKm'   => (int) ($this->units[$bid]['kelas_mapel_id'] ?? 0) === $targetKm,
+                'scarcity' => $this->unitScarcity($bid),
+            ];
+        }
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        usort($candidates, static function ($a, $b) {
+            if ($a['sameKm'] !== $b['sameKm']) {
+                return $a['sameKm'] <=> $b['sameKm']; // beda kelas_mapel dulu (false < true)
+            }
+
+            return $a['scarcity'] <=> $b['scarcity'];
+        });
+
+        return $candidates[0]['id'];
+    }
+
     // ------------------------------------------------------------------
     // State mutation
     // ------------------------------------------------------------------
@@ -514,7 +829,7 @@ class CSPEngine
         $this->guruMapelAssigned[$guruId][$mapelId] = (int) ($this->guruMapelAssigned[$guruId][$mapelId] ?? 0) + 1;
         $this->kelasDayCount[$kelasId][$hariId] = (int) ($this->kelasDayCount[$kelasId][$hariId] ?? 0) + 1;
 
-        if (! isset($this->kelasMapelGuruLock[$kmId])) {
+        if ($this->lockGuruEnabled && ! isset($this->kelasMapelGuruLock[$kmId])) {
             $this->kelasMapelGuruLock[$kmId] = $guruId;
         }
     }
@@ -636,9 +951,10 @@ class CSPEngine
     /**
      * @param list<int> $kelasIds
      * @param array<int, float> $pressures
+     * @param array<int, int> $lastUnplaced kelas_id => jumlah unplaced di attempt sebelumnya
      * @return list<int>
      */
-    protected function buildClassOrder(array $kelasIds, array $pressures, int $attempt): array
+    protected function buildClassOrder(array $kelasIds, array $pressures, int $attempt, array $lastUnplaced = []): array
     {
         $kelasIds = array_map('intval', $kelasIds);
         if ($attempt === 1) {
@@ -647,7 +963,37 @@ class CSPEngine
             return $kelasIds;
         }
 
-        // Later attempts diversify to escape earlier resource contention.
+        // Attempt >= 2: prioritise classes that left units unplaced last attempt
+        // (so they get a fresh, clean state first), then shuffle the rest.
+        $failed = [];
+        $rest   = [];
+        foreach ($kelasIds as $kid) {
+            $unplaced = (int) ($lastUnplaced[$kid] ?? 0);
+            if ($unplaced > 0) {
+                $failed[] = [
+                    'kelas'    => $kid,
+                    'unplaced' => $unplaced,
+                    'pressure' => (float) ($pressures[$kid] ?? 0),
+                ];
+            } else {
+                $rest[] = $kid;
+            }
+        }
+
+        if ($failed !== []) {
+            usort($failed, static function ($a, $b) {
+                if ($b['unplaced'] !== $a['unplaced']) {
+                    return $b['unplaced'] <=> $a['unplaced'];
+                }
+
+                return $b['pressure'] <=> $a['pressure'];
+            });
+            shuffle($rest);
+
+            return array_merge(array_column($failed, 'kelas'), $rest);
+        }
+
+        // No class failed last attempt — full shuffle (old behaviour).
         shuffle($kelasIds);
 
         return $kelasIds;

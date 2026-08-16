@@ -27,14 +27,12 @@
         <!-- Sidebar  -->
         <nav id="sidebar">
             <div class="sidebar-header">
-                <?php if (! empty($branding['logo_url'])): ?>
-                    <div class="d-flex align-items-center gap-2">
-                        <img src="<?= esc($branding['logo_url']) ?>" alt="Logo" style="height: 32px; width: auto; max-width: 40px; object-fit: contain; border-radius: 4px; background: #fff;">
-                        <h5 class="mb-0 fw-bold text-truncate" title="<?= esc($branding['nama_sekolah']) ?>"><?= esc($branding['nama_sekolah']) ?></h5>
+                <div class="sidebar-brand">
+                    <div class="sidebar-logo-wrap">
+                        <img src="<?= base_url('imgs/logo.jpeg') ?>" alt="Logo <?= esc($branding['nama_sekolah']) ?>" class="sidebar-logo-img">
                     </div>
-                <?php else: ?>
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-calendar-check"></i> <?= esc($branding['nama_sekolah']) ?></h5>
-                <?php endif; ?>
+                    <div class="sidebar-brand-name"><?= esc($branding['nama_sekolah']) ?></div>
+                </div>
             </div>
 
             <ul class="list-unstyled components">
@@ -97,9 +95,9 @@
                         <li class="px-3 mt-4 mb-2">
                             <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Mengajar</small>
                         </li>
-                        <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
+                        <!-- <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
                             <a href="<?= base_url('guru/preferensi') ?>"><i class="bi bi-sliders"></i> Preferensi Jadwal</a>
-                        </li>
+                        </li> -->
                         <li class="<?= url_is('guru/hari-blokir*') ? 'active' : '' ?>">
                             <a href="<?= base_url('guru/hari-blokir') ?>"><i class="bi bi-calendar-x"></i> Hari Tidak Mengajar</a>
                         </li>
@@ -119,9 +117,9 @@
                     <li class="<?= url_is('guru/jadwal*') ? 'active' : '' ?>">
                         <a href="<?= base_url('guru/jadwal') ?>"><i class="bi bi-calendar-week"></i> Jadwal Mengajar</a>
                     </li>
-                    <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
+                    <!-- <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
                         <a href="<?= base_url('guru/preferensi') ?>"><i class="bi bi-sliders"></i> Preferensi Jadwal</a>
-                    </li>
+                    </li> -->
                     <li class="<?= url_is('guru/hari-blokir*') ? 'active' : '' ?>">
                         <a href="<?= base_url('guru/hari-blokir') ?>"><i class="bi bi-calendar-x"></i> Hari Tidak Mengajar</a>
                     </li>

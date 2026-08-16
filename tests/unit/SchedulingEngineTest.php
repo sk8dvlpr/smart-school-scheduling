@@ -567,4 +567,355 @@ final class SchedulingEngineTest extends CIUnitTestCase
         $this->assertLessThanOrEqual(2, count($jpPerHari), 'Lab JP should pack onto at most 2 days');
         $this->assertGreaterThanOrEqual(2, max($jpPerHari), 'At least one day should have 2+ lab JP (not 1-per-day)');
     }
+
+    /**
+     * Guru langka: satu guru (G1) mengajar 2 mapel berbeda dengan cap ketat,
+     * plus satu guru cadangan (G2) yang cap-nya pas-pasan. Total demand M1 = 4
+     * tepat sama dengan total cap (1+3), M2 = 3 tepat sama cap G1. Solver lama
+     * (lock guru agresif sejak attempt 1) bisa meninggalkan unit unplaced di
+     * fixture ini; v3.2 (delayed lock + repair multi-pass) harus tuntas.
+     *
+     * @return array{engine: array, units: array}
+     */
+    private function scarceTeacherFixture(): array
+    {
+        $timeslotsByHari = [
+            1 => [
+                ['id' => 11, 'jam_ke' => 1, 'tipe' => 'jp'],
+                ['id' => 12, 'jam_ke' => 2, 'tipe' => 'jp'],
+                ['id' => 13, 'jam_ke' => 3, 'tipe' => 'jp'],
+                ['id' => 14, 'jam_ke' => 4, 'tipe' => 'jp'],
+            ],
+            2 => [
+                ['id' => 21, 'jam_ke' => 1, 'tipe' => 'jp'],
+                ['id' => 22, 'jam_ke' => 2, 'tipe' => 'jp'],
+                ['id' => 23, 'jam_ke' => 3, 'tipe' => 'jp'],
+                ['id' => 24, 'jam_ke' => 4, 'tipe' => 'jp'],
+            ],
+        ];
+        $jpSlotsByHari = SchedulingContext::buildJpSlotsByHari($timeslotsByHari);
+
+        $mapelRows = [
+            ['id' => 1, 'tipe' => 'umum', 'jurusan_id' => null, 'bobot_kognitif' => 7],
+            ['id' => 2, 'tipe' => 'umum', 'jurusan_id' => null, 'bobot_kognitif' => 5],
+        ];
+        // G1: satu-satunya guru M2 (cap 3) + guru M1 dengan cap sangat sempit (1).
+        // G2: guru cadangan M1 (cap 3). Demand M1 total = 4 = cap 1+3 → pas ketat.
+        $guruPool = SchedulingContext::buildGuruPool([
+            ['guru_id' => 101, 'mapel_id' => 1, 'max_jam_per_minggu' => 1],
+            ['guru_id' => 101, 'mapel_id' => 2, 'max_jam_per_minggu' => 3],
+            ['guru_id' => 102, 'mapel_id' => 1, 'max_jam_per_minggu' => 3],
+        ], $mapelRows);
+
+        $units = [];
+        $uid   = 1;
+        // Kelas A (10): M1 x2, M2 x3.
+        foreach ([[1, 2], [2, 3]] as [$mapel, $jam]) {
+            $kmId = 10 * 10 + $mapel;
+            for ($i = 0; $i < $jam; $i++) {
+                $units[$uid] = [
+                    'unit_id'          => $uid,
+                    'kelas_mapel_id'   => $kmId,
+                    'kelas_id'         => 10,
+                    'mapel_id'         => $mapel,
+                    'jurusan_id'       => 1,
+                    'tingkat'          => 'X',
+                    'unit_index'       => $i,
+                    'butuh_lab'        => 0,
+                    'lab_id'           => null,
+                    'homeroom_id'      => 210,
+                    'mapel_tipe'       => 'umum',
+                    'mapel_jurusan_id' => null,
+                    'bobot_kognitif'   => $mapel === 1 ? 7 : 5,
+                ];
+                $uid++;
+            }
+        }
+        // Kelas B (20): M1 x2.
+        for ($i = 0; $i < 2; $i++) {
+            $units[$uid] = [
+                'unit_id'          => $uid,
+                'kelas_mapel_id'   => 201,
+                'kelas_id'         => 20,
+                'mapel_id'         => 1,
+                'jurusan_id'       => 1,
+                'tingkat'          => 'X',
+                'unit_index'       => $i,
+                'butuh_lab'        => 0,
+                'lab_id'           => null,
+                'homeroom_id'      => 220,
+                'mapel_tipe'       => 'umum',
+                'mapel_jurusan_id' => null,
+                'bobot_kognitif'   => 7,
+            ];
+            $uid++;
+        }
+
+        $engine = [
+            'units'               => $units,
+            'jp_slots_by_hari'    => $jpSlotsByHari,
+            'hari_data'           => [
+                ['id' => 1, 'nama' => 'Senin', 'kode' => 'SEN', 'urutan' => 1],
+                ['id' => 2, 'nama' => 'Selasa', 'kode' => 'SEL', 'urutan' => 2],
+            ],
+            'guru_pool'           => $guruPool,
+            'guru_blokir'         => [],
+            'homeroom_map'        => [10 => 210, 20 => 220],
+            'lab_pool_by_jurusan' => [],
+            'timeout_seconds'     => 30,
+            'csp_max_attempts'    => 12,
+        ];
+
+        return ['engine' => $engine, 'units' => $units];
+    }
+
+    public function testDelayedGuruLockRecoversScarceTeacherFixture(): void
+    {
+        ['engine' => $engine, 'units' => $units] = $this->scarceTeacherFixture();
+
+        $result = (new CSPEngine($engine))->solve();
+
+        $this->assertCount(0, $result['unplaced'], 'Scarce-teacher fixture left units unplaced: ' . json_encode(array_map(
+            static fn ($u) => $u['reason'] ?? '?',
+            $result['unplaced']
+        )));
+        $this->assertCount(count($units), $result['assignments'], 'Scarce-teacher fixture did not place every unit.');
+        $this->assertHardConstraints($result['assignments'], $units, $engine);
+    }
+
+    /**
+     * Fixture deterministik yang MEMAKSA repair PASS 2 (evict-and-reinsert)
+     * benar-benar mengeksekusi evict — tidak seperti scarceTeacherFixture yang
+     * sudah tuntas di attempt 1 sehingga PASS 2 tidak pernah jalan.
+     *
+     * Skema (dari review): Hari 1 slot 11/12, Hari 2 slot 21/22; lab tunggal
+     * [300]; unit A1, A2 (km 101, kelas A) dan B1 (km 201, kelas B) semua
+     * butuh_lab=1; seed A1→(1,11), A2→(1,12); guru B1 di-blokir hari 2 (HC-4)
+     * sehingga B1 HANYA feasible di slot hari 1 yang sudah penuh A1/A2
+     * (lab 300 tersita) → PASS 1 greedy pasti gagal.
+     *
+     * Adaptasi sadar dari skema review: kelas A memakai guru G2 (tidak
+     * diblokir) sementara kelas B memakai G1 (diblokir hari 2). Jika A1/A2
+     * memakai guru yang sama dengan B1, maka setelah evict A1 tidak bisa
+     * di-re-place ke hari 2 (guru diblokir HC-4) dan fixture tak terselesaikan.
+     * Dengan G2 bebas, PASS 2: evict A1 → B1 terpasang di (1,11) → A1
+     * di-re-place ke hari 2. Ini membuktikan jalur evict benar-benar dipakai.
+     *
+     * @return array{engine: array, units: array}
+     */
+    private function evictFixture(): array
+    {
+        $timeslotsByHari = [
+            1 => [
+                ['id' => 11, 'jam_ke' => 1, 'tipe' => 'jp'],
+                ['id' => 12, 'jam_ke' => 2, 'tipe' => 'jp'],
+            ],
+            2 => [
+                ['id' => 21, 'jam_ke' => 1, 'tipe' => 'jp'],
+                ['id' => 22, 'jam_ke' => 2, 'tipe' => 'jp'],
+            ],
+        ];
+        $jpSlotsByHari = SchedulingContext::buildJpSlotsByHari($timeslotsByHari);
+
+        $mapelRows = [
+            ['id' => 1, 'tipe' => 'kejuruan', 'jurusan_id' => 1, 'bobot_kognitif' => 7],
+            ['id' => 2, 'tipe' => 'kejuruan', 'jurusan_id' => 1, 'bobot_kognitif' => 7],
+        ];
+        // G1: satu-satunya guru M1 (kelas B), diblokir hari 2 → B1 hanya hari 1.
+        // G2: satu-satunya guru M2 (kelas A), bebas → A1 bisa pindah ke hari 2.
+        $guruPool = SchedulingContext::buildGuruPool([
+            ['guru_id' => 101, 'mapel_id' => 1, 'max_jam_per_minggu' => 4],
+            ['guru_id' => 102, 'mapel_id' => 2, 'max_jam_per_minggu' => 4],
+        ], $mapelRows);
+        $guruBlokir = SchedulingContext::buildGuruBlokirIndex([
+            ['guru_id' => 101, 'hari_id' => 2],
+        ]);
+
+        $units = [
+            1 => [ // A1: kelas A (10), km 101, M2 (G2), butuh lab 300
+                'unit_id'          => 1,
+                'kelas_mapel_id'   => 101,
+                'kelas_id'         => 10,
+                'mapel_id'         => 2,
+                'jurusan_id'       => 1,
+                'tingkat'          => 'X',
+                'unit_index'       => 0,
+                'butuh_lab'        => 1,
+                'lab_id'           => 300,
+                'homeroom_id'      => 210,
+                'mapel_tipe'       => 'kejuruan',
+                'mapel_jurusan_id' => 1,
+                'bobot_kognitif'   => 7,
+            ],
+            2 => [ // A2: kelas A (10), km 101, M2 (G2), butuh lab 300
+                'unit_id'          => 2,
+                'kelas_mapel_id'   => 101,
+                'kelas_id'         => 10,
+                'mapel_id'         => 2,
+                'jurusan_id'       => 1,
+                'tingkat'          => 'X',
+                'unit_index'       => 1,
+                'butuh_lab'        => 1,
+                'lab_id'           => 300,
+                'homeroom_id'      => 210,
+                'mapel_tipe'       => 'kejuruan',
+                'mapel_jurusan_id' => 1,
+                'bobot_kognitif'   => 7,
+            ],
+            3 => [ // B1: kelas B (20), km 201, M1 (G1), butuh lab 300
+                'unit_id'          => 3,
+                'kelas_mapel_id'   => 201,
+                'kelas_id'         => 20,
+                'mapel_id'         => 1,
+                'jurusan_id'       => 1,
+                'tingkat'          => 'X',
+                'unit_index'       => 0,
+                'butuh_lab'        => 1,
+                'lab_id'           => 300,
+                'homeroom_id'      => 220,
+                'mapel_tipe'       => 'kejuruan',
+                'mapel_jurusan_id' => 1,
+                'bobot_kognitif'   => 7,
+            ],
+        ];
+
+        $engine = [
+            'units'               => $units,
+            'jp_slots_by_hari'    => $jpSlotsByHari,
+            'hari_data'           => [
+                ['id' => 1, 'nama' => 'Senin', 'kode' => 'SEN', 'urutan' => 1],
+                ['id' => 2, 'nama' => 'Selasa', 'kode' => 'SEL', 'urutan' => 2],
+            ],
+            'guru_pool'           => $guruPool,
+            'guru_blokir'         => $guruBlokir,
+            'homeroom_map'        => [10 => 210, 20 => 220],
+            'lab_pool_by_jurusan' => [1 => [300]],
+            'seed_assignments'    => [
+                1 => ['hari_id' => 1, 'timeslot_id' => 11, 'slot_index' => 0, 'guru_id' => 102, 'ruangan_id' => 300],
+                2 => ['hari_id' => 1, 'timeslot_id' => 12, 'slot_index' => 1, 'guru_id' => 102, 'ruangan_id' => 300],
+            ],
+            'timeout_seconds'     => 30,
+            'csp_max_attempts'    => 12,
+        ];
+
+        return ['engine' => $engine, 'units' => $units];
+    }
+
+    public function testRepairEvictAndReinsertActuallyEvicts(): void
+    {
+        ['engine' => $engine, 'units' => $units] = $this->evictFixture();
+
+        $csp = new CSPEngine($engine);
+        $result = $csp->solve();
+
+        $this->assertCount(0, $result['unplaced'], 'Evict fixture left units unplaced: ' . json_encode(array_map(
+            static fn ($u) => $u['reason'] ?? '?',
+            $result['unplaced']
+        )));
+        $this->assertCount(count($units), $result['assignments'], 'Evict fixture did not place every unit.');
+        $this->assertHardConstraints($result['assignments'], $units, $engine);
+
+        // Bukti evict benar-benar terjadi: B1 terpasang di slot hari 1, dan
+        // A1 TIDAK lagi di seed aslinya (1,11) melainkan pindah ke hari 2.
+        $this->assertSame(1, (int) $result['assignments'][3]['hari_id'], 'B1 harus menempati slot hari 1.');
+        $this->assertNotSame(11, (int) $result['assignments'][1]['timeslot_id'], 'A1 harus pindah dari seed (1,11).');
+        $this->assertSame(2, (int) $result['assignments'][1]['hari_id'], 'A1 harus di-re-place ke hari 2.');
+        $this->assertGreaterThan(0, $csp->getRepairEvictCount(), 'Counter evict PASS 2 harus > 0 (evict benar-benar dieksekusi).');
+    }
+
+    /**
+     * Dua guru eligible per mapel — memvalidasi bahwa delayed guru lock
+     * (attempt 1 fleksibel, attempt >= 2 lock per kelas_mapel) tidak pernah
+     * melanggar HC-6 (cap mingguan) dan tetap menyelesaikan semua unit.
+     *
+     * @return array{engine: array, units: array}
+     */
+    private function dualGuruFixture(): array
+    {
+        $timeslotsByHari = [
+            1 => [
+                ['id' => 11, 'jam_ke' => 1, 'tipe' => 'jp'],
+                ['id' => 12, 'jam_ke' => 2, 'tipe' => 'jp'],
+                ['id' => 13, 'jam_ke' => 3, 'tipe' => 'jp'],
+                ['id' => 14, 'jam_ke' => 4, 'tipe' => 'jp'],
+            ],
+            2 => [
+                ['id' => 21, 'jam_ke' => 1, 'tipe' => 'jp'],
+                ['id' => 22, 'jam_ke' => 2, 'tipe' => 'jp'],
+                ['id' => 23, 'jam_ke' => 3, 'tipe' => 'jp'],
+                ['id' => 24, 'jam_ke' => 4, 'tipe' => 'jp'],
+            ],
+        ];
+        $jpSlotsByHari = SchedulingContext::buildJpSlotsByHari($timeslotsByHari);
+
+        $mapelRows = [
+            ['id' => 1, 'tipe' => 'umum', 'jurusan_id' => null, 'bobot_kognitif' => 7],
+            ['id' => 2, 'tipe' => 'umum', 'jurusan_id' => null, 'bobot_kognitif' => 5],
+        ];
+        // M1: G1 & G2 eligible (cap longgar). M2: G1 & G3 eligible.
+        // G2 di-blokir hari 2 (HC-4) sehingga lock harus tetap fleksibel.
+        $guruPool = SchedulingContext::buildGuruPool([
+            ['guru_id' => 101, 'mapel_id' => 1, 'max_jam_per_minggu' => 8],
+            ['guru_id' => 101, 'mapel_id' => 2, 'max_jam_per_minggu' => 4],
+            ['guru_id' => 102, 'mapel_id' => 1, 'max_jam_per_minggu' => 8],
+            ['guru_id' => 103, 'mapel_id' => 2, 'max_jam_per_minggu' => 4],
+        ], $mapelRows);
+        $guruBlokir = SchedulingContext::buildGuruBlokirIndex([
+            ['guru_id' => 102, 'hari_id' => 2],
+        ]);
+
+        $units = [];
+        $uid   = 1;
+        foreach ([10, 20] as $kelasId) {
+            foreach ([[1, 2], [2, 2]] as [$mapel, $jam]) {
+                $kmId = $kelasId * 10 + $mapel;
+                for ($i = 0; $i < $jam; $i++) {
+                    $units[$uid] = [
+                        'unit_id'          => $uid,
+                        'kelas_mapel_id'   => $kmId,
+                        'kelas_id'         => $kelasId,
+                        'mapel_id'         => $mapel,
+                        'jurusan_id'       => 1,
+                        'tingkat'          => 'X',
+                        'unit_index'       => $i,
+                        'butuh_lab'        => 0,
+                        'lab_id'           => null,
+                        'homeroom_id'      => 200 + $kelasId,
+                        'mapel_tipe'       => 'umum',
+                        'mapel_jurusan_id' => null,
+                        'bobot_kognitif'   => $mapel === 1 ? 7 : 5,
+                    ];
+                    $uid++;
+                }
+            }
+        }
+
+        $engine = [
+            'units'               => $units,
+            'jp_slots_by_hari'    => $jpSlotsByHari,
+            'hari_data'           => [
+                ['id' => 1, 'nama' => 'Senin', 'kode' => 'SEN', 'urutan' => 1],
+                ['id' => 2, 'nama' => 'Selasa', 'kode' => 'SEL', 'urutan' => 2],
+            ],
+            'guru_pool'           => $guruPool,
+            'guru_blokir'         => $guruBlokir,
+            'homeroom_map'        => [10 => 210, 20 => 220],
+            'lab_pool_by_jurusan' => [],
+            'timeout_seconds'     => 30,
+            'csp_max_attempts'    => 12,
+        ];
+
+        return ['engine' => $engine, 'units' => $units];
+    }
+
+    public function testDelayGuruLockKeepsHc6(): void
+    {
+        ['engine' => $engine, 'units' => $units] = $this->dualGuruFixture();
+
+        $result = (new CSPEngine($engine))->solve();
+
+        $this->assertCount(0, $result['unplaced'], 'Dual-guru fixture left units unplaced.');
+        $this->assertCount(count($units), $result['assignments'], 'Dual-guru fixture did not place every unit.');
+        $this->assertHardConstraints($result['assignments'], $units, $engine);
+    }
 }

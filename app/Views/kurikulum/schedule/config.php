@@ -65,7 +65,7 @@
                     <div class="row mb-4">
                         <div class="col-md-4">
                             <label class="form-label fw-medium">CSP Max Attempts</label>
-                            <input type="number" class="form-control" name="csp_max_attempts" value="<?= esc($config['csp_max_attempts'] ?? 8) ?>" min="1" max="100" required>
+                            <input type="number" class="form-control" name="csp_max_attempts" value="<?= esc($config['csp_max_attempts'] ?? 12) ?>" min="1" max="100" required>
                             <div class="form-text">Retry dengan urutan variabel berbeda jika ada unit gagal.</div>
                         </div>
                     </div>

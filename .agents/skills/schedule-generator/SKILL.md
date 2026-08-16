@@ -80,7 +80,7 @@ Eligible `guru_id` from `guru_mapel` WHERE:
 | SC-6 | 7 | Beban guru seimbang | variance of guru JP across days |
 | SC-7 | — | Preferensi guru | **NOT implemented** (needs `guru_preferensi`) |
 | SC-8 | 5 | Minim perpindahan ruang | lab room transitions per class |
-| SC-9 | 4 | Kontinuitas guru | auto-satisfied → 0 |
+| SC-9 | 4 | Kontinuitas guru | delayed guru lock: attempt 1 bebas pilih guru, lock dari attempt 2+; mixed-guru diminimalkan GA via penalty |
 | SC-10 | 3 | Rotasi mapel jam pertama | repeated first-slot mapel across days |
 | SC-11 | 6 | Load balance lab antar jurusan | variance of lab usage across days per jurusan |
 
@@ -100,7 +100,13 @@ solve():
           if backtrack(remaining): return solution
           unassign
     return fail
-  on partial fail: min-conflict repair pass
+  retry up to csp_max_attempts (default 12); attempt 2+:
+    lockGuruEnabled (delayed guru lock, SC-9) + classes with unplaced
+    units prioritized (smart re-order); budget per class max(8000, n*150),
+    candidate limit 24
+  restore best attempt; on partial fail: repairSweepAdvanced() multi-pass
+  min-conflict repair (PASS 1 greedy → PASS 2 evict-and-reinsert →
+  PASS 3 relocate-swap, ≤ 2 rounds, HC-safe rollback)
 ```
 
 Track per `(guru_id, mapel_id)` assigned count for HC-6.

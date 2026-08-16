@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **smart-school-scheduling** (1879 symbols, 3648 relationships, 150 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **smart-school-scheduling** (1902 symbols, 3675 relationships, 152 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
@@ -135,7 +135,7 @@ app/Views/components/      → Shared partials (timetable.php)
 | SC-6 | 7 | Balance guru JP load across days |
 | SC-7 | 5 | Teacher day/time preference via `guru_preferensi` (Guru UI `/guru/preferensi` + GA penalty `sc7_teacher_preference`) |
 | SC-8 | 5 | Minimize room transitions (lab moves) |
-| SC-9 | 4 | Teacher continuity per class — auto-satisfied (penalty 0) |
+| SC-9 | 4 | Teacher continuity per class — delayed guru lock: attempt 1 picks guru freely (mixed-guru possible), lock re-enabled from attempt 2+ and during repair; GA minimizes mixed-guru via penalty |
 | SC-10 | 3 | Rotate first-slot mapel across days |
 | SC-11 | 6 | Balance lab usage across jurusan |
 | SC-12 | 7 | Pack lab-parallel classes (same jurusan+tingkat) onto fewer shared days; spillover OK (`sc_lab_day_pack`) |

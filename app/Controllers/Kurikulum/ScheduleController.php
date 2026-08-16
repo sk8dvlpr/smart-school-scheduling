@@ -672,7 +672,7 @@ class ScheduleController extends BaseController
             'csp_variable_ordering'       => 'MRV',
             'csp_value_ordering'          => 'LCV',
             'csp_repair_strategy'         => 'min_conflict',
-            'csp_max_attempts'            => 8,
+            'csp_max_attempts'            => 12,
             // GA (Fase 2)
             'population_size'             => 100,
             'max_generations'             => 500,
