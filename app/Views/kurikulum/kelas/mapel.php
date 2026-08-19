@@ -62,10 +62,21 @@
             </div>
         </form>
 
+        <form action="<?= base_url('kurikulum/kelas/' . $kelas['id'] . '/mapel/bulk-delete') ?>" method="post" id="bulkDeleteForm" style="display: none;">
+            <?= csrf_field() ?>
+            <div id="bulkDeleteInputs"></div>
+        </form>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Daftar Mapel</h6>
+            <button type="button" class="btn btn-danger btn-sm" id="btnBulkDelete" disabled onclick="submitBulkDelete()">
+                <i class="bi bi-trash"></i> Hapus Terpilih
+            </button>
+        </div>
         <div class="table-responsive">
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th width="5%"><input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)"></th>
                         <th>Mapel</th>
                         <th>JP/Minggu</th>
                         <th>Lab Utama</th>
@@ -74,10 +85,11 @@
                 </thead>
                 <tbody>
                     <?php if (empty($mapel_list)): ?>
-                        <tr><td colspan="4" class="text-center text-muted">Belum ada mapel kurikulum.</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted">Belum ada mapel kurikulum.</td></tr>
                     <?php else: ?>
                         <?php foreach ($mapel_list as $row): ?>
                         <tr>
+                            <td><input type="checkbox" class="form-check-input mapel-checkbox" value="<?= $row['mapel_id'] ?>" onchange="toggleBulkDelete()"></td>
                             <td><?= esc($row['mapel_kode'] . ' — ' . $row['mapel_nama']) ?></td>
                             <td><?= esc($row['jam_per_minggu']) ?> JP</td>
                             <td>
@@ -178,6 +190,35 @@
         document.getElementById('edit_lab_id').value = row.lab_id || '';
         toggleEditLab();
         editModal.show();
+    }
+
+    function toggleBulkDelete() {
+        const checkboxes = document.querySelectorAll('.mapel-checkbox:checked');
+        document.getElementById('btnBulkDelete').disabled = checkboxes.length === 0;
+    }
+
+    function toggleSelectAll(source) {
+        const checkboxes = document.querySelectorAll('.mapel-checkbox');
+        checkboxes.forEach(cb => cb.checked = source.checked);
+        toggleBulkDelete();
+    }
+
+    function submitBulkDelete() {
+        const checkboxes = document.querySelectorAll('.mapel-checkbox:checked');
+        if (checkboxes.length === 0) return;
+        if (!confirm('Hapus ' + checkboxes.length + ' mapel terpilih?')) return;
+        
+        const container = document.getElementById('bulkDeleteInputs');
+        container.innerHTML = '';
+        checkboxes.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'mapel_ids[]';
+            input.value = cb.value;
+            container.appendChild(input);
+        });
+        
+        document.getElementById('bulkDeleteForm').submit();
     }
 </script>
 <?= $this->endSection() ?>

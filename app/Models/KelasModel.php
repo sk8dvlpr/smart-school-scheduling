@@ -8,7 +8,7 @@ class KelasModel extends Model
 {
     protected $table          = 'kelas';
     protected $primaryKey     = 'id';
-    protected $useSoftDeletes = true;
+    protected $useSoftDeletes = false;
     protected $useTimestamps  = true;
     
     protected $allowedFields = [

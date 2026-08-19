@@ -36,8 +36,7 @@ class KelasController extends BaseController
                        WHERE km.kelas_id = kelas.id) as total_jp')
             ->join('jurusan', 'jurusan.id = kelas.jurusan_id', 'left')
             ->join('ruangan', 'ruangan.id = kelas.ruangan_id', 'left')
-            ->join('tahun_ajaran', 'tahun_ajaran.id = kelas.tahun_ajaran_id', 'left')
-            ->where('kelas.deleted_at IS NULL');
+            ->join('tahun_ajaran', 'tahun_ajaran.id = kelas.tahun_ajaran_id', 'left');
 
         if ($filterTingkat !== '') {
             $builder->where('kelas.tingkat', $filterTingkat);
@@ -80,7 +79,6 @@ class KelasController extends BaseController
         $exists = $db->table('kelas')
             ->where('nama', $data['nama'])
             ->where('tahun_ajaran_id', $data['tahun_ajaran_id'])
-            ->where('deleted_at IS NULL')
             ->countAllResults() > 0;
 
         if ($exists) {
@@ -115,7 +113,6 @@ class KelasController extends BaseController
             ->where('nama', $data['nama'])
             ->where('tahun_ajaran_id', $data['tahun_ajaran_id'])
             ->where('id !=', $id)
-            ->where('deleted_at IS NULL')
             ->countAllResults() > 0;
 
         if ($exists) {

@@ -46,6 +46,7 @@ $routes->group('kurikulum', ['filter' => 'kurikulum'], function ($routes) {
 
     $routes->get('kelas/(:num)/mapel', 'Kurikulum\KelasMapelController::index/$1');
     $routes->post('kelas/(:num)/mapel', 'Kurikulum\KelasMapelController::create/$1');
+    $routes->post('kelas/(:num)/mapel/bulk-delete', 'Kurikulum\KelasMapelController::bulkDelete/$1');
     $routes->post('kelas/(:num)/mapel/(:num)', 'Kurikulum\KelasMapelController::update/$1/$2');
     $routes->delete('kelas/(:num)/mapel/(:num)', 'Kurikulum\KelasMapelController::delete/$1/$2');
     $routes->resource('kelas', ['controller' => 'Kurikulum\KelasController']);

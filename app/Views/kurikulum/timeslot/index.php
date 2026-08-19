@@ -108,7 +108,7 @@
                     </div>
                     <div class="mb-3" id="jamKeWrapper">
                         <label class="form-label">Jam Pelajaran Ke-</label>
-                        <input type="number" class="form-control" name="jam_ke" id="jam_ke" min="1" value="1">
+                        <input type="number" class="form-control" name="jam_ke" id="jam_ke" min="0" value="1">
                     </div>
                     <div class="row mb-3">
                         <div class="col">

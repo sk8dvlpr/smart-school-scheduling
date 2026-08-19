@@ -156,6 +156,45 @@ class KelasMapelController extends BaseController
         return redirect()->to("/kurikulum/kelas/$kelasId/mapel")->with('success', 'Mapel kurikulum berhasil dihapus.');
     }
 
+    public function bulkDelete(int $kelasId)
+    {
+        $mapelIds = $this->request->getPost('mapel_ids');
+        if (empty($mapelIds) || !is_array($mapelIds)) {
+            return redirect()->back()->with('error', 'Pilih minimal satu mapel untuk dihapus.');
+        }
+
+        $deletedCount = 0;
+        $failedCount = 0;
+
+        foreach ($mapelIds as $mapelId) {
+            $row = $this->kelasMapelModel
+                ->where('kelas_id', $kelasId)
+                ->where('mapel_id', $mapelId)
+                ->first();
+
+            if ($row) {
+                $jadwalCount = \Config\Database::connect()->table('jadwal')
+                    ->where('kelas_mapel_id', $row['id'])
+                    ->countAllResults();
+
+                if ($jadwalCount == 0) {
+                    $this->kelasMapelModel->delete($row['id']);
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+        }
+
+        $msg = "$deletedCount mapel kurikulum berhasil dihapus.";
+        if ($failedCount > 0) {
+            $msg .= " $failedCount mapel gagal dihapus karena masih dipakai di jadwal.";
+            return redirect()->to("/kurikulum/kelas/$kelasId/mapel")->with('error', $msg);
+        }
+
+        return redirect()->to("/kurikulum/kelas/$kelasId/mapel")->with('success', $msg);
+    }
+
     private function getKelasDetail(int $kelasId): ?array
     {
         $db = \Config\Database::connect();
@@ -165,7 +204,6 @@ class KelasMapelController extends BaseController
             ->join('jurusan', 'jurusan.id = kelas.jurusan_id', 'left')
             ->join('tahun_ajaran', 'tahun_ajaran.id = kelas.tahun_ajaran_id', 'left')
             ->where('kelas.id', $kelasId)
-            ->where('kelas.deleted_at IS NULL')
             ->get()
             ->getRowArray();
     }
