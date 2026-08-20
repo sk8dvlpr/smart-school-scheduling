@@ -49,6 +49,12 @@ class GAEngine
 
     protected float $currentMutationRate = 0.08;
 
+    /** @var array<int, int> hari_id => max slot_index per day (precomputed) */
+    protected array $dailyCap = [];
+    protected int $numHari = 1;
+    /** @var array<string, float> schedule-hash => fitness (per optimize() run) */
+    protected array $fitnessCache = [];
+
     public function __construct(array $data)
     {
         $this->units         = $data['units'] ?? [];
@@ -90,22 +96,40 @@ class GAEngine
         ];
 
         $this->currentMutationRate = $this->mutationRate;
+
+        foreach ($this->jpSlotsByHari as $hariId => $slots) {
+            $this->dailyCap[(int) $hariId] = max(1, count($slots) - 1);
+        }
+        $this->numHari = max(1, count($this->hariData));
     }
 
     /**
-     * @return array{assignments: array, fitness: float, generations: int, violations: int}
+     * @return array{assignments: array, fitness: float, generations: int, violations: int,
+     *               penalty_breakdown: array<string, float>, weighted_sum: float}
      */
     public function optimize(array $initialAssignments): array
     {
         if ($initialAssignments === []) {
-            return ['assignments' => [], 'fitness' => 0.0, 'generations' => 0, 'violations' => 0];
+            return [
+                'assignments'       => [],
+                'fitness'           => 0.0,
+                'generations'       => 0,
+                'violations'        => 0,
+                'penalty_breakdown' => [],
+                'weighted_sum'      => 0.0,
+            ];
         }
 
         $start = microtime(true);
         $this->currentMutationRate = $this->mutationRate;
+        $this->fitnessCache = [];
 
         $population = [$initialAssignments];
         while (count($population) < $this->populationSize) {
+            // Guard timeout: jangan habiskan budget di fase inisialisasi populasi.
+            if ((microtime(true) - $start) > $this->timeoutSeconds) {
+                break;
+            }
             $population[] = $this->mutateSchedule($initialAssignments);
         }
 
@@ -127,7 +151,11 @@ class GAEngine
             }
 
             // Fitness is expensive: score every chromosome once per generation.
-            $fits = array_map(fn ($c) => $this->fitness($c), $population);
+            // fitness() caches internally, so re-scoring an unchanged elite is cheap.
+            $fits = [];
+            foreach ($population as $i => $c) {
+                $fits[$i] = $this->fitness($c);
+            }
             array_multisort($fits, SORT_DESC, $population);
 
             $next = array_slice($population, 0, $eliteCount); // elitism
@@ -152,7 +180,7 @@ class GAEngine
 
             // population[0] is the sorted elite carried into next; its score is fits[0].
             $genBest        = $population[0];
-            $genBestFitness = $this->fitness($genBest);
+            $genBestFitness = $fits[0];
 
             if ($genBestFitness > $bestFitness + 1e-9) {
                 $best        = $genBest;
@@ -168,16 +196,22 @@ class GAEngine
         }
 
         $penalties = $this->penalties($best);
+        $weightedSum = 0.0;
+        foreach ($this->w as $key => $weight) {
+            $weightedSum += $weight * ($penalties[$key] ?? 0.0);
+        }
         $violations = 0.0;
         foreach ($penalties as $p) {
             $violations += $p;
         }
 
         return [
-            'assignments' => $best,
-            'fitness'     => round($bestFitness, 6),
-            'generations' => $generations,
-            'violations'  => (int) round($violations * 100),
+            'assignments'      => $best,
+            'fitness'          => round($bestFitness, 6),
+            'generations'      => $generations,
+            'violations'       => (int) round($violations * 100),
+            'penalty_breakdown' => $penalties,
+            'weighted_sum'     => round($weightedSum, 4),
         ];
     }
 
@@ -204,8 +238,9 @@ class GAEngine
     }
 
     /**
-     * Order/uniform crossover: inherit a contiguous block of unit assignments
-     * from parentB onto a copy of parentA, keeping only feasible gene swaps.
+     * Block crossover: copy a contiguous block of unit assignments from parentB
+     * onto a copy of parentA. The whole block is validated once with isFeasible;
+     * if rejected, fall back to per-gene swaps with early exit after 5 failures.
      */
     protected function crossover(array $parentA, array $parentB): array
     {
@@ -216,18 +251,31 @@ class GAEngine
             return $child;
         }
 
-        $len   = max(1, (int) floor($n * 0.4));
+        $len   = max(1, (int) floor($n * 0.3));
         $start = mt_rand(0, max(0, $n - $len));
         $block = array_slice($ids, $start, $len);
 
+        $trial = $child;
         foreach ($block as $unitId) {
-            if (! isset($parentB[$unitId])) {
+            if (isset($parentB[$unitId])) {
+                $trial[$unitId] = $parentB[$unitId];
+            }
+        }
+        if ($this->isFeasible($trial)) {
+            return $trial;
+        }
+
+        $failures = 0;
+        foreach ($block as $unitId) {
+            if (! isset($parentB[$unitId]) || $failures > 5) {
                 continue;
             }
             $trial = $child;
             $trial[$unitId] = $parentB[$unitId];
             if ($this->isFeasible($trial)) {
                 $child = $trial;
+            } else {
+                $failures++;
             }
         }
 
@@ -235,8 +283,8 @@ class GAEngine
     }
 
     /**
-     * Swap-with-repair mutation: move a random unit to another feasible
-     * (hari, timeslot, guru) that improves or preserves soft quality.
+     * Swap mutation: randomly swap two units of the same class or same teacher.
+     * This avoids trivial class/teacher conflicts and preserves schedule density.
      */
     protected function mutateSchedule(array $schedule): array
     {
@@ -244,97 +292,67 @@ class GAEngine
             return $schedule;
         }
 
-        $unitId = (int) array_rand($schedule);
-        $candidates = $this->validCandidates($unitId, $schedule);
-        if ($candidates === []) {
-            return $schedule;
-        }
-
-        $pick = $candidates[array_rand($candidates)];
+        $swapCount = mt_rand(1, 3);
         $trial = $schedule;
-        $trial[$unitId] = $pick;
+        $unitIds = array_keys($schedule);
 
-        return $this->isFeasible($trial) ? $trial : $schedule;
-    }
+        for ($i = 0; $i < $swapCount; $i++) {
+            $u1 = $unitIds[array_rand($unitIds)];
+            $swapType = mt_rand(0, 1); // 0 = class swap, 1 = guru swap
 
-    /**
-     * @return list<array{hari_id:int,timeslot_id:int,slot_index:int,guru_id:int,ruangan_id?:int}>
-     */
-    protected function validCandidates(int $unitId, array $schedule): array
-    {
-        if (! isset($this->units[$unitId])) {
-            return [];
-        }
+            $u2 = null;
+            if ($swapType === 0) {
+                // Class-based swap
+                $kelasId = $this->units[$u1]['kelas_id'] ?? 0;
+                $candidates = [];
+                foreach ($this->units as $uid => $u) {
+                    if (($u['kelas_id'] ?? 0) === $kelasId && $uid !== $u1) {
+                        $candidates[] = $uid;
+                    }
+                }
+                if ($candidates !== []) {
+                    $u2 = $candidates[array_rand($candidates)];
+                }
+            } else {
+                // Guru-based swap
+                $guruId = $trial[$u1]['guru_id'] ?? 0;
+                $candidates = [];
+                foreach ($trial as $uid => $a) {
+                    if (($a['guru_id'] ?? 0) === $guruId && $uid !== $u1) {
+                        $candidates[] = $uid;
+                    }
+                }
+                if ($candidates !== []) {
+                    $u2 = $candidates[array_rand($candidates)];
+                }
+            }
 
-        $index = $this->buildIndex($schedule, $unitId);
-        $unit  = $this->units[$unitId];
-        $kelasId  = (int) $unit['kelas_id'];
-        $mapelId  = (int) $unit['mapel_id'];
-        $kmId     = (int) $unit['kelas_mapel_id'];
-        $butuhLab = (int) ($unit['butuh_lab'] ?? 0) === 1;
-        $lockedGuru = $this->lockedGuruForKelasMapel($kmId, $schedule);
-        $kmDayLab = $butuhLab
-            ? SchedulingContext::buildKmDayLabFromAssignments($schedule, $this->units, $unitId)
-            : [];
-
-        $out = [];
-        foreach ($this->hariData as $hari) {
-            $hariId   = (int) $hari['id'];
-            $eligible = SchedulingContext::eligibleGurus($unit, $hariId, $this->guruPool, $this->guruBlokir, $index['guruMapel']);
-            if ($eligible === []) {
+            if ($u2 === null) {
                 continue;
             }
-            if ($lockedGuru !== null) {
-                $eligible = in_array($lockedGuru, $eligible, true) ? [$lockedGuru] : [];
-                if ($eligible === []) {
-                    continue;
-                }
-            }
-            foreach ($this->jpSlotsByHari[$hariId] ?? [] as $slot) {
-                $timeslotId = (int) $slot['id'];
-                $slotIndex  = (int) $slot['slot_index'];
 
-                if (isset($index['kelasSlot'][$kelasId][$hariId][$timeslotId])) {
-                    continue;
-                }
+            // Swap timeslots
+            $t1 = [
+                'hari_id'     => $trial[$u1]['hari_id'],
+                'timeslot_id' => $trial[$u1]['timeslot_id'],
+                'slot_index'  => $trial[$u1]['slot_index']
+            ];
+            $t2 = [
+                'hari_id'     => $trial[$u2]['hari_id'],
+                'timeslot_id' => $trial[$u2]['timeslot_id'],
+                'slot_index'  => $trial[$u2]['slot_index']
+            ];
 
-                $ruanganId = null;
-                if ($butuhLab) {
-                    $ruanganId = SchedulingContext::resolveLabForPlacement(
-                        $kmId,
-                        $hariId,
-                        $timeslotId,
-                        (int) ($unit['lab_id'] ?? 0),
-                        (int) $unit['jurusan_id'],
-                        $this->labPoolByJurusan,
-                        $index['labSlot'],
-                        $kmDayLab,
-                        null
-                    );
-                    if ($ruanganId === null) {
-                        continue;
-                    }
-                }
+            $trial[$u1]['hari_id']     = $t2['hari_id'];
+            $trial[$u1]['timeslot_id'] = $t2['timeslot_id'];
+            $trial[$u1]['slot_index']  = $t2['slot_index'];
 
-                foreach ($eligible as $g) {
-                    if (isset($index['guruSlot'][$g][$hariId][$timeslotId])) {
-                        continue;
-                    }
-                    $candidate = [
-                        'hari_id'     => $hariId,
-                        'timeslot_id' => $timeslotId,
-                        'slot_index'  => $slotIndex,
-                        'guru_id'     => $g,
-                    ];
-                    if ($butuhLab && $ruanganId !== null) {
-                        $candidate['ruangan_id'] = $ruanganId;
-                    }
-                    $out[] = $candidate;
-                }
-            }
+            $trial[$u2]['hari_id']     = $t1['hari_id'];
+            $trial[$u2]['timeslot_id'] = $t1['timeslot_id'];
+            $trial[$u2]['slot_index']  = $t1['slot_index'];
         }
 
-        return $out;
+        return $this->isFeasible($trial) ? $trial : $schedule;
     }
 
     // ------------------------------------------------------------------
@@ -455,13 +473,23 @@ class GAEngine
 
     protected function fitness(array $schedule): float
     {
+        $cacheKey = md5(serialize($schedule));
+        if (isset($this->fitnessCache[$cacheKey])) {
+            return $this->fitnessCache[$cacheKey];
+        }
+
         $p = $this->penalties($schedule);
         $sum = 0.0;
         foreach ($this->w as $key => $weight) {
             $sum += $weight * ($p[$key] ?? 0.0);
         }
 
-        return 1.0 / (1.0 + $sum);
+        $fit = 1.0 / (1.0 + $sum);
+        if (count($this->fitnessCache) >= 5000) {
+            $this->fitnessCache = [];
+        }
+
+        return $this->fitnessCache[$cacheKey] = $fit;
     }
 
     /**
@@ -472,10 +500,6 @@ class GAEngine
     protected function penalties(array $schedule): array
     {
         $count = max(1, count($schedule));
-        $dailyCap = [];
-        foreach ($this->jpSlotsByHari as $hariId => $slots) {
-            $dailyCap[$hariId] = max(1, count($slots) - 1);
-        }
 
         // Group data in one pass.
         $guruDaySlots  = []; // [guru][hari] => list slot_index
@@ -486,8 +510,6 @@ class GAEngine
         $jurusanDayLab = []; // [jurusan][hari] => lab count
         $kelasDayFirst = []; // [kelas][hari] => [slot_index, mapel]
 
-        $sc4 = 0.0;
-        $sc5 = 0.0;
         $labPrefHits = 0;
         $labPrefTotal = 0;
 
@@ -499,7 +521,6 @@ class GAEngine
             $kelasId = (int) ($unit['kelas_id'] ?? 0);
             $mapelId = (int) ($unit['mapel_id'] ?? 0);
             $jurId   = (int) ($unit['jurusan_id'] ?? 0);
-            $bobot   = (int) ($unit['bobot_kognitif'] ?? 5);
             $butuhLab = (int) ($unit['butuh_lab'] ?? 0) === 1;
             $roomId  = $butuhLab
                 ? (int) ($a['ruangan_id'] ?? 0)
@@ -522,31 +543,60 @@ class GAEngine
                 $jurusanDayLab[$jurId][$hariId] = (int) ($jurusanDayLab[$jurId][$hariId] ?? 0) + 1;
             }
 
-            $cap = $dailyCap[$hariId] ?? 1;
-            $lateness = $cap > 0 ? $slotIdx / $cap : 0.0; // 0 morning .. 1 afternoon
-            $sc4 += ($bobot / 10.0) * $lateness;          // heavy subject placed late
-            $sc5 += ((10 - $bobot) / 10.0) * (1.0 - $lateness); // light subject placed early
-
             if (! isset($kelasDayFirst[$kelasId][$hariId]) || $slotIdx < $kelasDayFirst[$kelasId][$hariId][0]) {
                 $kelasDayFirst[$kelasId][$hariId] = [$slotIdx, $mapelId];
             }
         }
 
-        // SC-1 teacher gaps
-        $sc1 = 0.0;
-        foreach ($guruDaySlots as $days) {
-            foreach ($days as $slots) {
-                $sc1 += $this->gapCount($slots);
+        // SC-4/SC-5: heavy mapel in morning (SC-4), light mapel in afternoon (SC-5).
+        $sc4Violations = 0;
+        $sc4Total      = 0;
+        $sc5Violations = 0;
+        $sc5Total      = 0;
+        foreach ($schedule as $unitId => $a) {
+            $bobot   = (int) ($this->units[$unitId]['bobot_kognitif'] ?? 5);
+            $hariId  = (int) $a['hari_id'];
+            $slotIdx = (int) $a['slot_index'];
+            $cap     = $this->dailyCap[$hariId] ?? 1;
+            
+            if ($bobot >= 7) {
+                $sc4Total++;
+                $threshold4 = $cap * 2.0 / 3.0;
+                if ($slotIdx >= $threshold4) {
+                    $sc4Violations++;
+                }
+            } elseif ($bobot <= 3) {
+                $sc5Total++;
+                $threshold5 = $cap / 3.0;
+                if ($slotIdx < $threshold5) {
+                    $sc5Violations++;
+                }
             }
         }
+        $sc4 = $sc4Total > 0 ? $sc4Violations / $sc4Total : 0.0;
+        $sc5 = $sc5Total > 0 ? $sc5Violations / $sc5Total : 0.0;
 
-        // SC-2 student (class) gaps
-        $sc2 = 0.0;
-        foreach ($kelasDaySlots as $days) {
-            foreach ($days as $slots) {
-                $sc2 += $this->gapCount($slots);
+        // SC-1 teacher gaps: average normalized gap per (guru, hari) pair.
+        $sc1 = 0.0;
+        $sc1Pairs = 0;
+        foreach ($guruDaySlots as $days) {
+            foreach ($days as $hariId => $slots) {
+                $sc1 += min(1.0, $this->gapCount($slots) / max(1, $this->dailyCap[$hariId] ?? 1));
+                $sc1Pairs++;
             }
         }
+        $sc1 = $sc1Pairs > 0 ? $sc1 / $sc1Pairs : 0.0;
+
+        // SC-2 student (class) gaps: average normalized gap per (kelas, hari) pair.
+        $sc2 = 0.0;
+        $sc2Pairs = 0;
+        foreach ($kelasDaySlots as $days) {
+            foreach ($days as $hariId => $slots) {
+                $sc2 += min(1.0, $this->gapCount($slots) / max(1, $this->dailyCap[$hariId] ?? 1));
+                $sc2Pairs++;
+            }
+        }
+        $sc2 = $sc2Pairs > 0 ? $sc2 / $sc2Pairs : 0.0;
 
         // SC-3 subject distribution across the week (avoid piling same mapel one day)
         $sc3 = 0.0;
@@ -554,7 +604,10 @@ class GAEngine
         foreach ($kelasMapelDay as $mapels) {
             foreach ($mapels as $days) {
                 $vals = array_values($days);
-                $sc3 += (max($vals) - 1); // extra concentration beyond 1/day
+                $totalJp = array_sum($vals);
+                $maxPerDay = max($vals);
+                // 0 = perfectly spread (1/day), 1 = all on one day
+                $sc3 += $totalJp > 1 ? ($maxPerDay - 1) / ($totalJp - 1) : 0.0;
                 $sc3Groups++;
             }
         }
@@ -562,7 +615,7 @@ class GAEngine
 
         // SC-6 guru load balance across days
         $sc6 = 0.0;
-        $numHari = max(1, count($this->hariData));
+        $numHari = $this->numHari;
         $guruCount = max(1, count($guruDayCount));
         foreach ($guruDayCount as $days) {
             $vals = array_values($days);
@@ -573,7 +626,7 @@ class GAEngine
                 $dev += abs($v - $avg);
             }
             $dev += ($numHari - count($vals)) * $avg; // zero-days deviation
-            $sc6 += $total > 0 ? $dev / $total : 0.0;
+            $sc6 += $total > 0 ? min(1.0, $dev / $total) : 0.0;
         }
         $sc6 /= $guruCount;
 
@@ -591,31 +644,40 @@ class GAEngine
                 }
             }
         }
-        $sc8 /= $count;
+        $sc8 = min(1.0, $sc8 / $count);
 
         // SC-10 first-slot rotation: penalize repeated first mapel across days
         $sc10 = 0.0;
         $kelasCount = max(1, count($kelasDayFirst));
         foreach ($kelasDayFirst as $days) {
-            $firstMapels = [];
-            foreach ($days as $entry) {
-                $firstMapels[] = $entry[1];
-            }
-            $sc10 += count($firstMapels) - count(array_unique($firstMapels));
+            $firstMapels = array_column($days, 1);
+            $numDays = count($firstMapels);
+            $numUnique = count(array_unique($firstMapels));
+            // 0 = fully rotated (semua beda), 1 = semua hari mapel pertama sama
+            $sc10 += $numDays > 1 ? 1.0 - (($numUnique - 1) / ($numDays - 1)) : 0.0;
         }
-        $sc10 /= $kelasCount;
+        $sc10 = $kelasCount > 0 ? $sc10 / $kelasCount : 0.0;
 
         // SC-11 lab load balance across jurusan
         $sc11 = 0.0;
         $jurCount = max(1, count($jurusanDayLab));
         foreach ($jurusanDayLab as $days) {
             $vals = array_values($days);
-            $sc11 += max($vals) - min($vals);
+            $total = array_sum($vals);
+            $avg = $total / $this->numHari;
+            $dev = 0.0;
+            foreach ($vals as $v) { 
+                $dev += abs($v - $avg); 
+            }
+            $dev += ($this->numHari - count($vals)) * $avg; // zero-days
+            
+            $maxDev = $total > 0 ? $total * ($this->numHari - 1) / $this->numHari : 1;
+            $sc11 += min(1.0, $dev / max(1.0, $maxDev * 2.0));
         }
-        $sc11 /= $jurCount;
+        $sc11 = $jurCount > 0 ? $sc11 / $jurCount : 0.0;
 
         // SC-12 pack lab classes (jurusan+tingkat) onto fewer parallel-filled days
-        $sc12 = SchedulingContext::labDayPackPenalty($schedule, $this->units, $this->labPoolByJurusan);
+        $sc12 = SchedulingContext::labDayPackPenalty($schedule, $this->units, $this->labPoolByJurusan, $this->numHari);
 
         // SC-9: teacher continuity per kelas_mapel (one guru per class-subject pair)
         $sc9 = 0.0;
@@ -634,7 +696,7 @@ class GAEngine
                 $sc9 += 1.0;
             }
         }
-        $sc9 /= $kmCount;
+        $sc9 = min(1.0, $sc9 / $kmCount);
 
         // SC-7: teacher day/time preference
         $sc7 = 0.0;
@@ -673,11 +735,11 @@ class GAEngine
         $labPref = $labPrefTotal > 0 ? $labPrefHits / $labPrefTotal : 0.0;
 
         return [
-            'sc1'  => $sc1 / $count,
-            'sc2'  => $sc2 / $count,
+            'sc1'  => $sc1,
+            'sc2'  => $sc2,
             'sc3'  => $sc3,
-            'sc4'  => $sc4 / $count,
-            'sc5'  => $sc5 / $count,
+            'sc4'  => $sc4,
+            'sc5'  => $sc5,
             'sc6'  => $sc6,
             'sc7'  => $sc7,
             'sc8'  => $sc8,

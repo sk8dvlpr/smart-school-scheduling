@@ -456,7 +456,7 @@ class SchedulingContext
      * @param array<int, array<string, mixed>> $units
      * @param array<int, list<int>> $labPoolByJurusan
      */
-    public static function labDayPackPenalty(array $schedule, array $units, array $labPoolByJurusan): float
+    public static function labDayPackPenalty(array $schedule, array $units, array $labPoolByJurusan, int $numHari = 5): float
     {
         /** @var array<string, array{kelas: array<int, true>, days: array<int, true>, pool: int}> $groups */
         $groups = [];
@@ -490,10 +490,12 @@ class SchedulingContext
             $daysUsed   = count($g['days']);
             $idealDays  = (int) max(1, (int) ceil($kelasCount / $g['pool']));
             $extra      = max(0, $daysUsed - $idealDays);
-            $sum += $extra / max(1, $kelasCount);
+            
+            $maxExtraExpected = max(1, $numHari - $idealDays);
+            $sum += min(1.0, $extra / $maxExtraExpected);
         }
 
-        return min(1.0, $sum / count($groups));
+        return $sum / count($groups);
     }
 }
 

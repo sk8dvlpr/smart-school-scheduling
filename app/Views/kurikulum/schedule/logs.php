@@ -26,9 +26,10 @@
                         <th>Status</th>
                         <th>Ringkasan</th>
                         <th>Fitness Score</th>
+                        <th>Quality Score</th>
                         <th>Generasi</th>
                         <th>Konflik</th>
-                        <th>Durasi (dtk)</th>
+                        <th>Durasi</th>
                         <th>Dijalankan Oleh</th>
                         <th>Aksi</th>
                     </tr>
@@ -39,6 +40,13 @@
                         $report = !empty($log['result_report']) ? json_decode($log['result_report'], true) : null;
                         $unplacedCount = is_array($report) ? count($report['unplaced'] ?? []) : 0;
                         $warningCount = is_array($report) ? count($report['warnings'] ?? []) : 0;
+                        
+                        // Hitung Quality Score (0-100%)
+                        $qualityScore = 0;
+                        if ($log['fitness_score']) {
+                            $penalty = (1 / max(0.0001, $log['fitness_score'])) - 1;
+                            $qualityScore = max(0, 100 - ($penalty * 2));
+                        }
                     ?>
                     <tr>
                         <td>
@@ -88,10 +96,26 @@
                         </td>
                         <td>
                             <?php if ($log['fitness_score']): ?>
-                                <div class="progress" style="height: 6px; width: 60px;">
-                                    <div class="progress-bar bg-info" role="progressbar" style="width: <?= $log['fitness_score'] * 100 ?>%"></div>
+                                <div class="small fw-bold"><?= number_format($log['fitness_score'], 4) ?></div>
+                                <div class="text-muted" style="font-size: 0.7rem;">raw</div>
+                            <?php else: ?>
+                                -
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($log['fitness_score']): ?>
+                                <?php 
+                                    $bgClass = 'bg-danger';
+                                    if ($qualityScore >= 80) $bgClass = 'bg-success';
+                                    elseif ($qualityScore >= 60) $bgClass = 'bg-info';
+                                    elseif ($qualityScore >= 40) $bgClass = 'bg-warning';
+                                ?>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 8px; width: 60px;">
+                                        <div class="progress-bar <?= $bgClass ?>" role="progressbar" style="width: <?= $qualityScore ?>%"></div>
+                                    </div>
+                                    <div class="small fw-bold"><?= number_format($qualityScore, 1) ?>%</div>
                                 </div>
-                                <div class="small fw-bold mt-1"><?= number_format($log['fitness_score'], 4) ?></div>
                             <?php else: ?>
                                 -
                             <?php endif; ?>
@@ -108,7 +132,15 @@
                                 -
                             <?php endif; ?>
                         </td>
-                        <td><?= $log['execution_time'] ?? '-' ?></td>
+                        <td>
+                            <?php 
+                                if (isset($log['execution_time'])) {
+                                    echo gmdate("H:i:s", (int)$log['execution_time']);
+                                } else {
+                                    echo '-';
+                                }
+                            ?>
+                        </td>
                         <td><?= esc($log['admin_nama'] ?? 'System') ?></td>
                         <td class="text-nowrap">
                             <?php if (in_array($log['status'], ['completed', 'partial'], true)): ?>

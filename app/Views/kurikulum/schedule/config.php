@@ -219,12 +219,20 @@
                     <h6 class="fw-bold text-danger mb-3"><i class="bi bi-cpu"></i> System Limits</h6>
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-medium">Timeout Algoritma (Detik)</label>
+                            <label class="form-label fw-medium">Timeout CSP (Detik)</label>
                             <div class="input-group">
-                                <input type="number" class="form-control" name="timeout_seconds" value="<?= esc($config['timeout_seconds'] ?? 300) ?>" min="30" max="3600" required>
+                                <input type="number" class="form-control" name="csp_timeout_seconds" value="<?= esc($config['csp_timeout_seconds'] ?? $config['timeout_seconds'] ?? 300) ?>" min="15" max="3600" required>
                                 <span class="input-group-text">Detik</span>
                             </div>
-                            <div class="form-text">Batas total waktu CSP + GA.</div>
+                            <div class="form-text">Batas waktu fase CSP (penempatan awal jadwal).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Timeout GA (Detik)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="ga_timeout_seconds" value="<?= esc($config['ga_timeout_seconds'] ?? 300) ?>" min="15" max="3600" required>
+                                <span class="input-group-text">Detik</span>
+                            </div>
+                            <div class="form-text">Batas waktu fase GA (optimasi soft constraints), terpisah dari CSP.</div>
                         </div>
                     </div>
 

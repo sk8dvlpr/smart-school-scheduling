@@ -198,6 +198,27 @@ class ScheduleController extends BaseController
 
         $postData = $this->request->getPost();
 
+        // Clamp bounds per tipe key numerik (server-side hardening).
+        $clamps = [
+            // int, bounded
+            'population_size'              => [5, 300],
+            'max_generations'              => [1, 2000],
+            'tournament_size'              => [2, 10],
+            'csp_max_attempts'             => [1, 100],
+            'stagnation_limit'             => [5, 300],
+            'adaptive_mutation_trigger'    => [1, 200],
+            'csp_timeout_seconds'          => [15, 3600],
+            'ga_timeout_seconds'           => [15, 3600],
+            // float 0..1
+            'crossover_rate'               => [0.0, 1.0],
+            'mutation_rate'                => [0.0, 0.5],
+            'fitness_threshold'            => [0.0, 1.0],
+            'elitism_ratio'                => [0.0, 0.5],
+            'adaptive_mutation_increment'  => [0.0, 0.2],
+        ];
+        // Bobot soft constraint tanpa prefix numerik (sc1..sc11 via regex ^sc\d).
+        $scWeightKeys = ['sc_lab_day_pack', 'sc_lab_preference'];
+
         foreach ($postData as $key => $val) {
             if (in_array($key, [
                 // CSP
@@ -207,7 +228,8 @@ class ScheduleController extends BaseController
                 'population_size', 'max_generations', 'tournament_size', 'crossover_rate',
                 'crossover_method', 'mutation_rate', 'mutation_method', 'elitism_ratio',
                 'stagnation_limit', 'adaptive_mutation', 'adaptive_mutation_trigger',
-                'adaptive_mutation_increment', 'fitness_threshold', 'timeout_seconds',
+                'adaptive_mutation_increment', 'fitness_threshold',
+                'csp_timeout_seconds', 'ga_timeout_seconds',
                 // Soft constraint weights (1-10)
                 'sc1_teacher_gap', 'sc2_student_gap', 'sc3_subject_distribution',
                 'sc4_heavy_morning', 'sc5_light_afternoon',                 'sc6_teacher_load_balance', 'sc7_teacher_preference',
@@ -216,6 +238,17 @@ class ScheduleController extends BaseController
                 'sc_lab_day_pack',
                 'sc_lab_preference',
             ], true)) {
+                // Clamp semua key numerik server-side sebelum disimpan (kolom TEXT).
+                if (array_key_exists($key, $clamps)) {
+                    [$min, $max] = $clamps[$key];
+                    $clamped = max($min, min($max, (float) $val));
+                    // Simpan string yang bisa di-cast ulang benar: int utuh, float 4 desimal.
+                    $val = is_int($min) && is_int($max)
+                        ? (string) (int) $clamped
+                        : (string) round($clamped, 4);
+                } elseif (preg_match('/^sc\d/', $key) || in_array($key, $scWeightKeys, true)) {
+                    $val = (string) max(0, min(10, (int) $val));
+                }
                 $existing = $this->configModel->where('tahun_ajaran_id', $activeTa['id'])
                     ->where('param_key', $key)
                     ->first();
@@ -682,12 +715,13 @@ class ScheduleController extends BaseController
             'mutation_rate'               => 0.08,
             'mutation_method'             => 'swap_with_repair',
             'elitism_ratio'               => 0.1,
-            'stagnation_limit'            => 40,
+            'stagnation_limit'            => 150,
             'adaptive_mutation'           => 1,
             'adaptive_mutation_trigger'   => 20,
             'adaptive_mutation_increment' => 0.02,
             'fitness_threshold'           => 0.95,
-            'timeout_seconds'             => 300,
+            'csp_timeout_seconds'         => 300,
+            'ga_timeout_seconds'          => 300,
             // Soft constraint weights (skala 1-10)
             'sc1_teacher_gap'             => 9,
             'sc2_student_gap'             => 9,
@@ -709,6 +743,17 @@ class ScheduleController extends BaseController
                 ->where('param_key', $key)
                 ->first();
             if (! $exists) {
+                // Lazy copy legacy: if a pre-v4.1 'timeout_seconds' row exists for
+                // this tahun ajaran, reuse its value as the csp_timeout_seconds
+                // default so existing deployments keep their tuning.
+                if ($key === 'csp_timeout_seconds') {
+                    $legacy = $this->configModel->where('tahun_ajaran_id', $taId)
+                        ->where('param_key', 'timeout_seconds')
+                        ->first();
+                    if ($legacy !== null) {
+                        $val = max(15, min(3600, (int) $legacy['param_value']));
+                    }
+                }
                 $this->configModel->insert([
                     'tahun_ajaran_id' => $taId,
                     'param_key'       => $key,

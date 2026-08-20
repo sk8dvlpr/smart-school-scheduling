@@ -118,7 +118,7 @@ For v1 → v2 migration on existing DB, use separate alter migrations instead of
 ### 14. `schedule_config`
 - Fields: `id`, `tahun_ajaran_id`, `param_key`, `param_value`, `description`, timestamps
 
-Default keys: `population_size`, `max_generations`, `crossover_rate`, `mutation_rate`, `fitness_threshold`, `max_guru_jam_per_hari`, `timeout_seconds`, `default_password`
+Default keys: `population_size`, `max_generations`, `crossover_rate`, `mutation_rate`, `fitness_threshold`, `max_guru_jam_per_hari`, `csp_timeout_seconds` (default 300, clamp 15–3600), `ga_timeout_seconds` (default 300, clamp 15–3600, independen dari timeout CSP), `default_password`
 
 ### 15. `schedule_logs`
 - Fields: `id`, `tahun_ajaran_id`, `status` (ENUM running/completed/failed/partial), `fitness_score`, `generations_run`, `total_conflicts`, `execution_time`, `error_message`, `generated_by` (FK → **users.id**), `started_at`, `completed_at`, `created_at`

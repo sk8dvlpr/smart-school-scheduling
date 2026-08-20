@@ -86,6 +86,8 @@ Eligible `guru_id` from `guru_mapel` WHERE:
 
 **Fitness**: `1 / (1 + Σ(Wi × Penalty_i_normalized))`
 
+> Semua penalty SC-1..SC-12 + `lab_pref` dinormalisasi ke [0,1]. SC-4/SC-5 **violation-based**: SC-4 hanya menghukum `bobot_kognitif` ≥ 7 di slot afternoon (`slot_index ≥ cap/2`); SC-5 hanya menghukum bobot ≤ 3 di slot morning; bobot 4–6 netral. SC-1/SC-2 dinormalisasi per pasangan (guru/kelas, hari) terhadap `dailyCap`; SC-3/SC-8/SC-9/SC-10 di-cap `min(1.0)`; SC-6 `min(1.0, dev/total)`; SC-11 dinormalisasi ke rata-rata `dailyCap`. `optimize()` juga mengembalikan `penalty_breakdown` (0–1 per SC) dan `weighted_sum` (Σ Wi×Pi), disimpan di `schedule_logs.result_report.stats.ga`.
+
 ## CSPEngine
 
 ```
@@ -115,11 +117,12 @@ Track per `(guru_id, mapel_id)` assigned count for HC-6.
 
 - Chromosome: full assignment array (all from CSP variations, not random)
 - Selection: Tournament (k = `tournament_size`, default 5)
-- Crossover: Order Crossover (OX), rate `crossover_rate` (0.8)
-- Mutation: swap two units' slots + HC repair, rate `mutation_rate` (0.08)
+- Crossover: Order Crossover (OX), rate `crossover_rate` (0.8) — batch-swap blok 30% unit + satu `isFeasible()` check, fallback per-gene dengan early-exit 5 gagal
+- Mutation: multi-swap 1–3 unit slots + HC repair, rate `mutation_rate` (0.08)
 - Elitism: top `elitism_ratio` (10%) carried forward
 - Adaptive mutation: after `adaptive_mutation_trigger` (20) stagnant gens, mutation += `adaptive_mutation_increment` (0.02)
 - Termination: fitness ≥ threshold OR `stagnation_limit` (40) gens no improvement OR max_generations OR timeout
+- Performa: fitness cache `md5(serialize($schedule))` (dibatasi 5000 entry, di-reset bila penuh); `dailyCap`/`numHari` dihitung sekali di constructor; timeout guard juga di loop inisialisasi populasi
 - All offspring must pass `isFeasible()` (re-check HC-1..HC-8) or be repaired/rejected
 
 ## ScheduleGenerator
@@ -143,8 +146,8 @@ public function reset(int $tahunAjaranId): bool
 
 ## Config (schedule_config per tahun_ajaran)
 
-CSP: `csp_consistency_method`, `csp_variable_ordering`, `csp_value_ordering`, `csp_repair_strategy`, `csp_max_attempts`
-GA: `population_size`, `max_generations`, `tournament_size`, `crossover_rate`, `crossover_method`, `mutation_rate`, `mutation_method`, `elitism_ratio`, `stagnation_limit`, `adaptive_mutation`, `adaptive_mutation_trigger`, `adaptive_mutation_increment`, `fitness_threshold`, `timeout_seconds`
+CSP: `csp_consistency_method`, `csp_variable_ordering`, `csp_value_ordering`, `csp_repair_strategy`, `csp_max_attempts`, `csp_timeout_seconds` (default 300, clamp 15–3600; fallback ke key legacy `timeout_seconds` bila belum ada)
+GA: `population_size`, `max_generations`, `tournament_size`, `crossover_rate`, `crossover_method`, `mutation_rate`, `mutation_method`, `elitism_ratio`, `stagnation_limit`, `adaptive_mutation`, `adaptive_mutation_trigger`, `adaptive_mutation_increment`, `fitness_threshold`, `ga_timeout_seconds` (default 300, clamp 15–3600, independen dari timeout CSP — cap `min(180, ...)` lama dihapus)
 SC weights: `sc1_teacher_gap`, `sc2_student_gap`, `sc3_subject_distribution`, `sc4_heavy_morning`, `sc5_light_afternoon`, `sc6_teacher_load_balance`, `sc8_room_transition`, `sc9_teacher_continuity`, `sc10_first_slot_rotation`, `sc11_lab_load_balance`
 
 ## UI — `Kurikulum\ScheduleController`

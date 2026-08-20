@@ -435,7 +435,7 @@ class ScheduleGenerator
         }
 
         $solverConfig = [
-            'timeout_seconds'  => max(15, (int) ($config['timeout_seconds'] ?? 300)),
+            'timeout_seconds'  => max(15, min(3600, (int) ($config['csp_timeout_seconds'] ?? $config['timeout_seconds'] ?? 300))),
             'csp_max_attempts' => max(1, (int) ($config['csp_max_attempts'] ?? 12)),
         ];
 
@@ -460,7 +460,6 @@ class ScheduleGenerator
             $report['stats']['repair'] = $repairReport;
         }
 
-        $cspTimeout = (int) $solverConfig['timeout_seconds'];
         $cspEngine = new CSPEngine(array_merge($engineData, $solverConfig, [
             'seed_assignments' => $seedAssignments,
         ]));
@@ -490,11 +489,11 @@ class ScheduleGenerator
             'mutation_rate'             => (float) ($config['mutation_rate'] ?? 0.08),
             'fitness_threshold'         => (float) ($config['fitness_threshold'] ?? 0.95),
             'elitism_ratio'             => (float) ($config['elitism_ratio'] ?? 0.1),
-            'stagnation_limit'          => (int) ($config['stagnation_limit'] ?? 40),
+            'stagnation_limit'          => (int) ($config['stagnation_limit'] ?? 150),
             'adaptive_mutation'         => (int) ($config['adaptive_mutation'] ?? 1),
             'adaptive_mutation_trigger' => (int) ($config['adaptive_mutation_trigger'] ?? 20),
             'adaptive_mutation_increment' => (float) ($config['adaptive_mutation_increment'] ?? 0.02),
-            'timeout_seconds'           => min(180, $cspTimeout),
+            'timeout_seconds'           => max(15, min(3600, (int) ($config['ga_timeout_seconds'] ?? 300))),
             'sc1_teacher_gap'           => (float) ($config['sc1_teacher_gap'] ?? 9),
             'sc2_student_gap'           => (float) ($config['sc2_student_gap'] ?? 9),
             'sc3_subject_distribution'  => (float) ($config['sc3_subject_distribution'] ?? 7),
@@ -513,9 +512,11 @@ class ScheduleGenerator
         $gaResult = $gaEngine->optimize($assignments);
         $finalAssignments = $gaResult['assignments'];
         $report['stats']['ga'] = [
-            'fitness'     => $gaResult['fitness'],
-            'generations' => $gaResult['generations'],
-            'violations'  => $gaResult['violations'],
+            'fitness'           => $gaResult['fitness'],
+            'generations'       => $gaResult['generations'],
+            'violations'        => $gaResult['violations'],
+            'penalty_breakdown' => $gaResult['penalty_breakdown'] ?? [],
+            'weighted_sum'      => $gaResult['weighted_sum'] ?? null,
         ];
 
         try {

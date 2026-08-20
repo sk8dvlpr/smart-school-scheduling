@@ -708,7 +708,8 @@ erDiagram
 | `adaptive_mutation_trigger` | 20 | Ambang generasi stagnan sebelum adaptif |
 | `adaptive_mutation_increment` | 0.02 | Kenaikan mutation rate per trigger |
 | `fitness_threshold` | 0.95 | Target fitness (0–1) |
-| `timeout_seconds` | 300 | Batas waktu generate (detik) |
+| `csp_timeout_seconds` | 300 | Batas waktu fase CSP (detik); clamp server-side 15–3600. Fallback ke key legacy `timeout_seconds` bila key baru belum ada di `schedule_config` |
+| `ga_timeout_seconds` | 300 | Batas waktu fase GA (detik); clamp server-side 15–3600. Independen dari timeout CSP — cap `min(180, ...)` lama dihapus |
 
 **Bobot Soft Constraint (skala 1–10):**
 
@@ -972,6 +973,8 @@ Setiap unit perlu assignment: `(hari, timeslot, guru_id, ruangan_id)`.
 | SC-12 | Packing lab paralel (jurusan+tingkat) | 7 | Isi lab sejajar di hari yang sama untuk kelas se-tingkat+jurusan; JP sisa boleh hari lain; **bukan HC** |
 
 > **Fitness** menormalisasi tiap penalti ke rentang 0–1 sebelum dikali bobot, agar tidak ada constraint yang mendominasi hanya karena skalanya besar.
+>
+> **Implementasi penalti (v3.2):** semua penalti SC-1..SC-12 + `sc_lab_preference` dinormalisasi ke [0,1]. SC-4/SC-5 bersifat **violation-based**: SC-4 hanya menghukum `bobot_kognitif` ≥ 7 yang ditempatkan di slot afternoon (`slot_index ≥ cap/2`), SC-5 hanya menghukum bobot ≤ 3 di slot morning; bobot 4–6 netral. SC-1/SC-2 dinormalisasi per pasangan (guru/kelas, hari) terhadap kapasitas harian; SC-3/SC-8/SC-9/SC-10 di-cap `min(1.0)`; SC-6 `min(1.0, dev/total)`; SC-11 dinormalisasi terhadap rata-rata kapasitas harian.
 
 > **Ketersediaan hari guru** (`guru_hari_blokir`) bersifat **hard constraint (HC-4)**, bukan soft — guru yang diblokir di hari tertentu **tidak boleh** mendapat jadwal sama sekali di hari tersebut. Guru dapat mengisi hari blokir sendiri via `/guru/hari-blokir` (data milik sendiri); Kurikulum tetap bisa override.
 

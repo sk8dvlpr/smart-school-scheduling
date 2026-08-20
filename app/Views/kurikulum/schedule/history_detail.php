@@ -57,7 +57,15 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm"><div class="card-body">
             <div class="text-muted small">Durasi</div>
-            <div class="fw-bold"><?= esc($log['execution_time'] ?? '-') ?> dtk</div>
+            <div class="fw-bold">
+                <?php 
+                    if (isset($log['execution_time'])) {
+                        echo gmdate("H:i:s", (int)$log['execution_time']);
+                    } else {
+                        echo '-';
+                    }
+                ?>
+            </div>
         </div></div>
     </div>
 </div>
@@ -66,9 +74,73 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-white fw-bold">Kualitas Jadwal (GA)</div>
     <div class="card-body small">
-        <p>Fitness: <strong><?= number_format((float) ($report['stats']['ga']['fitness'] ?? 0), 4) ?></strong>
+        <?php
+            $fit = (float) ($report['stats']['ga']['fitness'] ?? 0);
+            $penalty = $fit > 0 ? (1 / $fit) - 1 : 0;
+            $qScore = max(0, 100 - ($penalty * 2));
+            
+            $bgClass = 'bg-danger';
+            if ($qScore >= 80) $bgClass = 'bg-success';
+            elseif ($qScore >= 60) $bgClass = 'bg-info';
+            elseif ($qScore >= 40) $bgClass = 'bg-warning';
+        ?>
+        <div class="mb-3 d-flex align-items-center gap-3">
+            <div>
+                Quality Score: 
+                <span class="fs-4 fw-bold <?= str_replace('bg-', 'text-', $bgClass) ?>"><?= number_format($qScore, 1) ?>%</span>
+            </div>
+            <div class="progress flex-grow-1" style="height: 10px; max-width: 200px;">
+                <div class="progress-bar <?= $bgClass ?>" role="progressbar" style="width: <?= $qScore ?>%"></div>
+            </div>
+        </div>
+        
+        <p>Fitness (Raw): <strong><?= number_format($fit, 4) ?></strong>
         | Generations: <?= (int) ($report['stats']['ga']['generations'] ?? 0) ?>
         | Violation score: <?= (int) ($report['stats']['ga']['violations'] ?? 0) ?></p>
+
+        <?php if (isset($report['stats']['ga']['weighted_sum'])): ?>
+        <p class="mb-2">Weighted sum: <strong><?= esc(number_format((float) $report['stats']['ga']['weighted_sum'], 4)) ?></strong></p>
+        <?php endif; ?>
+
+        <?php if (!empty($report['stats']['ga']['penalty_breakdown'])): ?>
+            <?php
+                $scLabels = [
+                    'sc1'  => 'Gap guru',
+                    'sc2'  => 'Gap kelas',
+                    'sc3'  => 'Sebaran mapel',
+                    'sc4'  => 'Mapel berat di sore',
+                    'sc5'  => 'Mapel ringan di pagi',
+                    'sc6'  => 'Beban guru harian',
+                    'sc7'  => 'Preferensi guru',
+                    'sc8'  => 'Transisi ruangan',
+                    'sc9'  => 'Kontinuitas guru',
+                    'sc10' => 'Rotasi slot pertama',
+                    'sc11' => 'Keseimbangan lab',
+                    'sc12' => 'Pemadatan hari lab',
+                    'lab_pref' => 'Preferensi lab',
+                ];
+            ?>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Kriteria</th>
+                            <th class="text-end">Penalty (0-1)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($scLabels as $key => $label): ?>
+                            <?php if (array_key_exists($key, $report['stats']['ga']['penalty_breakdown'])): ?>
+                            <tr>
+                                <td><?= esc($label) ?></td>
+                                <td class="text-end font-monospace"><?= esc(number_format((float) $report['stats']['ga']['penalty_breakdown'][$key], 4)) ?></td>
+                            </tr>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>

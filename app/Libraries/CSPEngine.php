@@ -68,6 +68,9 @@ class CSPEngine
     /** Jumlah swap/relocate sukses oleh repair PASS 3 (di-reset per repairSweepAdvanced). */
     protected int $repairSwapCount = 0;
 
+    /** @var array<int, array<int, int>> [hari][timeslot_id] => slot_index (precomputed) */
+    protected array $slotIndexByTs = [];
+
     public function __construct(array $data)
     {
         $this->units               = $data['units'] ?? [];
@@ -83,6 +86,12 @@ class CSPEngine
 
         foreach ($this->hariData as $h) {
             $this->hariIds[] = (int) $h['id'];
+        }
+
+        foreach ($this->jpSlotsByHari as $hariId => $slots) {
+            foreach ($slots as $slot) {
+                $this->slotIndexByTs[(int) $hariId][(int) $slot['id']] = (int) $slot['slot_index'];
+            }
         }
 
         foreach ($this->guruPool as $mapelId => $entries) {
@@ -377,6 +386,32 @@ class CSPEngine
     }
 
     /**
+     * LCV adjacency bonus: prefer slots adjacent to this guru's/kelas's
+     * already-placed slots on the same day (reduces future gaps, SC-1/SC-2).
+     * Returns 0 when no placement exists or the day is unknown.
+     */
+    protected function adjacencyBonus(int $kelasId, int $guruId, int $hariId, int $slotIndex): int
+    {
+        $bonus = 0;
+        foreach (array_keys($this->guruSlot[$guruId][$hariId] ?? []) as $tsId) {
+            $idx = $this->slotIndexByTs[$hariId][$tsId] ?? null;
+            if ($idx !== null && abs($idx - $slotIndex) <= 1) {
+                $bonus += 30;
+                break;
+            }
+        }
+        foreach (array_keys($this->kelasSlot[$kelasId][$hariId] ?? []) as $tsId) {
+            $idx = $this->slotIndexByTs[$hariId][$tsId] ?? null;
+            if ($idx !== null && abs($idx - $slotIndex) <= 1) {
+                $bonus += 20;
+                break;
+            }
+        }
+
+        return $bonus;
+    }
+
+    /**
      * Ordered, feasible (hari, timeslot, guru) candidates for a unit.
      * Non-lab: LCV spread across days (fewest class JP that day first), then earlier slot.
      * Lab (butuh_lab): pack same kelas_mapel onto as few days as possible (km-packing heuristic).
@@ -479,7 +514,7 @@ class CSPEngine
                         $this->labPoolByJurusan,
                         $unitId
                     )
-                    : ($dayCount * 100 + $slotIndex);
+                    : ($dayCount * 100 + $slotIndex) - $this->adjacencyBonus($kelasId, $bestGuru, $hariId, $slotIndex);
 
                 $candidate = [
                     'hari_id'     => $hariId,
