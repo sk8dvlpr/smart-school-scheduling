@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Filters\LoginThrottleFilter;
 use App\Models\GuruModel;
 use App\Models\UserModel;
 use CodeIgniter\HTTP\RedirectResponse;
@@ -42,8 +43,12 @@ class AuthController extends BaseController
             ->first();
 
         if (! $user || ! password_verify($password, $user['password'])) {
+            LoginThrottleFilter::recordFailure($this->request->getIPAddress(), $email);
+
             return redirect()->back()->with('error', 'Email atau password salah.');
         }
+
+        LoginThrottleFilter::clear($this->request->getIPAddress(), $email);
 
         $guruId = null;
         $guru   = (new GuruModel())->where('user_id', $user['id'])
@@ -106,10 +111,10 @@ class AuthController extends BaseController
         }
 
         if (! $this->validate([
-            'password_baru'      => 'required|min_length[6]',
+            'password_baru'      => 'required|min_length[8]',
             'password_konfirmasi'=> 'required|matches[password_baru]',
         ])) {
-            return redirect()->back()->withInput()->with('error', 'Validasi password gagal.');
+            return redirect()->back()->withInput()->with('error', 'Validasi password gagal. Minimal 8 karakter.');
         }
 
         $userModel = new UserModel();

@@ -85,7 +85,7 @@
                             <?php endif; ?>
                             <?php if ((int) $row['id'] !== (int) session()->get('user_id')): ?>
                             <?php if (! empty($is_admin)): ?>
-                            <form action="<?= base_url('kurikulum/users/' . $row['id'] . '/reset-password') ?>" method="post" class="d-inline" onsubmit="return confirm('Reset password ke password123?');">
+                            <form action="<?= base_url('kurikulum/users/' . $row['id'] . '/reset-password') ?>" method="post" class="d-inline" onsubmit="return confirm('Reset password ke password sementara acak?');">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-sm btn-warning" title="Reset Password">
                                     <i class="bi bi-key"></i>
@@ -163,7 +163,7 @@
                         </div>
                     </div>
                     <div class="alert alert-info py-2" id="passwordInfo">
-                        <small><i class="bi bi-info-circle me-1"></i> Password default: <strong>password123</strong> (wajib ganti saat login pertama)</small>
+                        <small><i class="bi bi-info-circle me-1"></i> Password sementara acak akan ditampilkan sekali setelah simpan (wajib ganti saat login pertama).</small>
                     </div>
                 </div>
                 <div class="modal-footer">

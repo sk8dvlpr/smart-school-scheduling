@@ -1,0 +1,22 @@
+# Shared-hosting safety: keep DocumentRoot on /public when possible.
+# This root .htaccess denies sensitive paths and rewrites into /public.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to sensitive directories
+    RewriteRule ^(app|writable|vendor|docs|tests|system)/ - [F,L]
+
+    # Block common secrets / dumps
+    RewriteRule ^(\.env|composer\.(json|lock)|spark)$ - [F,L]
+    RewriteRule \.sql$ - [F,L]
+
+    # Route everything else to public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</IfModule>

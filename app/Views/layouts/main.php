@@ -29,7 +29,7 @@
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <div class="sidebar-logo-wrap">
-                        <img src="<?= base_url('imgs/logo.jpeg') ?>" alt="Logo <?= esc($branding['nama_sekolah']) ?>" class="sidebar-logo-img">
+                        <img src="<?= esc($branding['logo_url'] ?? base_url('imgs/logo.jpeg')) ?>" alt="Logo <?= esc($branding['nama_sekolah']) ?>" class="sidebar-logo-img">
                     </div>
                     <div class="sidebar-brand-name"><?= esc($branding['nama_sekolah']) ?></div>
                 </div>
