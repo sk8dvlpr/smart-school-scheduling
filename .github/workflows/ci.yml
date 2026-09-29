@@ -26,7 +26,7 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -34,9 +34,13 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: intl, mbstring, mysqli, gd, zip
           coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.lock for matrix PHP
+        run: composer validate --no-check-publish --strict
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Composer audit
         run: composer audit --no-dev || true
