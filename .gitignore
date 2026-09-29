@@ -45,6 +45,8 @@ composer.phar
 !/writable/uploads/index.html
 /writable/debugbar/*
 !/writable/debugbar/index.html
+/writable/installed.lock
+!/writable/installed.lock.example
 php_errors.log
 
 #-------------------------

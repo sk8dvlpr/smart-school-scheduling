@@ -136,7 +136,9 @@ Disarankan memakai **Laragon** atau **XAMPP** (sudah berisi Apache, MySQL, PHP).
    ```bash
    composer install
    ```
-5. **Buat file pengaturan** `.env` di folder utama proyek (salin isi dari `.env` di komputer pengembang, atau buat baru) dan sesuaikan:
+5. **Instalasi wizard (disarankan):** jalankan `php spark serve`, buka `http://localhost:8080/install`, ikuti langkah database → sekolah & admin. Wizard menulis `.env`, migrasi, dan `writable/installed.lock`.
+
+   **Manual:** buat file `.env` (salin dari `env`) dan sesuaikan:
    ```ini
    app.baseURL = 'http://localhost/smart-school-scheduling/public/'
    database.default.hostname = localhost
@@ -218,14 +220,13 @@ Buka browser: `http://localhost:8080`
 
 ### Login pertama kali
 
-Setelah `db:seed`, gunakan akun berikut (data dari instalasi default):
+**Instalasi baru (disarankan):** buka `/install` setelah `composer install` — wizard membuat akun **kurikulum admin** dan password yang Anda tentukan saat instalasi.
 
-| Peran | Email | Password default |
-|-------|-------|------------------|
-| Kurikulum | `admin@smktunas.sch.id` | `password123` |
-| Kepala Sekolah | `kepsek@smktunas.sch.id` | `password123` |
+**Instalasi manual / legacy demo:** `php spark db:seed SmartSchoolSchedulingSeeder` hanya untuk data contoh (bukan default produksi). Kredensial demo ada di dump SQL, bukan password baku produk.
 
 > Segera ganti password setelah login pertama di lingkungan produksi.
+
+**Pengembangan:** jika database sudah ada sebelum fitur installer, buat `writable/installed.lock` (file kosong atau JSON) agar aplikasi tidak redirect ke `/install`.
 
 ### Alur kerja singkat (Kurikulum)
 

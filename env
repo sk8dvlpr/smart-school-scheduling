@@ -1,0 +1,24 @@
+#--------------------------------------------------------------------
+# ENVIRONMENT
+#--------------------------------------------------------------------
+
+CI_ENVIRONMENT = production
+
+#--------------------------------------------------------------------
+# APP
+#--------------------------------------------------------------------
+
+app.baseURL = 'http://localhost:8080/'
+encryption.key =
+
+#--------------------------------------------------------------------
+# DATABASE
+#--------------------------------------------------------------------
+
+database.default.hostname = localhost
+database.default.database = smart_school_scheduling
+database.default.username = root
+database.default.password =
+database.default.DBDriver = MySQLi
+database.default.DBPrefix =
+database.default.port = 3306

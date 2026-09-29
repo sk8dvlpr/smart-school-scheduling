@@ -6,8 +6,9 @@ use CodeIgniter\Database\Seeder;
 use RuntimeException;
 
 /**
- * Memuat data awal dari dump phpMyAdmin docs/database/smart_school_scheduling.sql.
- * Jalankan setelah migrate: php spark db:seed
+ * LEGACY OPTIONAL — dump demo SMK Tunas (docs/database/smart_school_scheduling.sql).
+ * Bukan default instalasi baru; gunakan wizard / s3:install (template kosong) atau pilih demo di installer.
+ * Manual: php spark db:seed SmartSchoolSchedulingSeeder
  */
 class SmartSchoolSchedulingSeeder extends Seeder
 {

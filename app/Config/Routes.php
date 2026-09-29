@@ -3,6 +3,20 @@
 use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
+// Web installer (no auth filters; InstallFilter gates access)
+$routes->group('install', static function ($routes) {
+    $routes->get('/', 'Install\InstallController::index');
+    $routes->get('requirements', 'Install\InstallController::requirements');
+    $routes->post('requirements', 'Install\InstallController::requirementsPost');
+    $routes->get('database', 'Install\InstallController::database');
+    $routes->post('database', 'Install\InstallController::databasePost');
+    $routes->post('test-database', 'Install\InstallController::testDatabase');
+    $routes->get('setup', 'Install\InstallController::setup');
+    $routes->post('setup', 'Install\InstallController::setupPost');
+    $routes->match(['get', 'post'], 'run', 'Install\InstallController::run');
+    $routes->get('finish', 'Install\InstallController::finish');
+});
+
 $routes->get('/', 'AuthController::index');
 
 // Auth routes (public)
@@ -58,6 +72,9 @@ $routes->group('kurikulum', ['filter' => 'kurikulum'], function ($routes) {
 
     $routes->get('schedule', 'Kurikulum\ScheduleController::index');
     $routes->post('schedule/generate', 'Kurikulum\ScheduleController::generate');
+    $routes->get('schedule/job/(:num)', 'Kurikulum\ScheduleController::jobStatus/$1');
+    $routes->post('schedule/job/(:num)/cancel', 'Kurikulum\ScheduleController::cancelJob/$1');
+    $routes->post('schedule/job/(:num)/tick', 'Kurikulum\ScheduleController::jobTick/$1');
     $routes->get('schedule/config', 'Kurikulum\ScheduleController::config');
     $routes->post('schedule/config', 'Kurikulum\ScheduleController::saveConfig');
     $routes->get('schedule/result', 'Kurikulum\ScheduleController::result');
