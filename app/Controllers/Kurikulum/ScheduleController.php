@@ -14,6 +14,8 @@ use App\Models\TimeslotModel;
 use App\Libraries\ScheduleGenerator;
 use App\Libraries\JadwalManualService;
 use App\Libraries\ScheduleHistoryService;
+use App\Libraries\ScheduleJobService;
+use App\Models\ScheduleJobModel;
 
 class ScheduleController extends BaseController
 {
@@ -83,7 +85,110 @@ class ScheduleController extends BaseController
         ]);
     }
 
+    /**
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
     public function generate()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $activeTa = $this->taModel->where('is_active', 1)->first();
+        if (! $activeTa) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tidak ada Tahun Ajaran aktif.']);
+        }
+
+        $parentLogId  = (int) $this->request->getPost('parent_log_id');
+        $generateMode = $this->request->getPost('generate_mode') === 'history_repair' ? 'history_repair' : 'fresh';
+        $parentLogId  = $parentLogId > 0 ? $parentLogId : null;
+
+        $service = new ScheduleJobService();
+        $result  = $service->enqueue(
+            (int) $activeTa['id'],
+            (int) session()->get('user_id'),
+            $parentLogId,
+            $generateMode
+        );
+
+        return $this->response->setJSON(array_merge($result, ['csrf_hash' => csrf_hash()]));
+    }
+
+    /**
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function jobStatus(int $id)
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $activeTa = $this->taModel->where('is_active', 1)->first();
+        if (! $activeTa) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tidak ada Tahun Ajaran aktif.']);
+        }
+
+        $service = new ScheduleJobService();
+        $job     = $service->getJob($id);
+        if ($job === null || (int) $job['tahun_ajaran_id'] !== (int) $activeTa['id']) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Job tidak ditemukan.']);
+        }
+
+        $payload = [
+            'success'       => true,
+            'job_id'        => (int) $job['id'],
+            'status'        => $job['status'],
+            'progress'      => (int) ($job['progress'] ?? 0),
+            'generation'    => $job['generation'] !== null ? (int) $job['generation'] : null,
+            'best_fitness'  => $job['best_fitness'] !== null ? (float) $job['best_fitness'] : null,
+            'cancel_requested' => (int) ($job['cancel_requested'] ?? 0),
+            'message'       => $this->jobStatusMessage($job),
+            'csrf_hash'     => csrf_hash(),
+        ];
+
+        if ($job['status'] === ScheduleJobModel::STATUS_COMPLETED && ! empty($job['schedule_log_id'])) {
+            $payload = array_merge($payload, $this->buildGenerateResultFromLog((int) $job['schedule_log_id']));
+        }
+
+        if ($job['status'] === ScheduleJobModel::STATUS_FAILED || $job['status'] === ScheduleJobModel::STATUS_CANCELLED) {
+            $payload['success'] = false;
+            $payload['message'] = (string) ($job['error_message'] ?? 'Generate gagal atau dibatalkan.');
+        }
+
+        return $this->response->setJSON($payload);
+    }
+
+    /**
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function cancelJob(int $id)
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setStatusCode(403);
+        }
+
+        $activeTa = $this->taModel->where('is_active', 1)->first();
+        if (! $activeTa) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tidak ada Tahun Ajaran aktif.']);
+        }
+
+        $service = new ScheduleJobService();
+        $job     = $service->getJob($id);
+        if ($job === null || (int) $job['tahun_ajaran_id'] !== (int) $activeTa['id']) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Job tidak ditemukan.']);
+        }
+
+        $result = $service->requestCancel($id);
+
+        return $this->response->setJSON(array_merge($result, ['csrf_hash' => csrf_hash()]));
+    }
+
+    /**
+     * Shared-hosting fallback: process one owned job synchronously.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function jobTick(int $id)
     {
         if (! $this->request->isAJAX()) {
             return $this->response->setStatusCode(403);
@@ -96,19 +201,15 @@ class ScheduleController extends BaseController
 
         set_time_limit(0);
 
-        $parentLogId   = (int) $this->request->getPost('parent_log_id');
-        $generateMode  = $this->request->getPost('generate_mode') === 'history_repair' ? 'history_repair' : 'fresh';
-        $parentLogId   = $parentLogId > 0 ? $parentLogId : null;
+        $service = new ScheduleJobService();
+        $job     = $service->getJob($id);
+        if ($job === null || (int) $job['tahun_ajaran_id'] !== (int) $activeTa['id']) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Job tidak ditemukan.']);
+        }
 
-        $generator = new ScheduleGenerator();
-        $result = $generator->generate(
-            (int) $activeTa['id'],
-            (int) session()->get('user_id'),
-            $parentLogId,
-            $generateMode
-        );
+        $result = $service->processOne($id, (int) session()->get('user_id'));
 
-        return $this->response->setJSON($result);
+        return $this->response->setJSON(array_merge($result, ['csrf_hash' => csrf_hash()]));
     }
 
     /**
@@ -636,6 +737,56 @@ class ScheduleController extends BaseController
             'logs'          => $logs,
             'published_id'  => (int) ($activeTa['published_schedule_log_id'] ?? 0),
         ]);
+    }
+
+    /**
+     * @return list<array{reason_label: string, suggested_fix: string, count: int, examples: list<string>}>
+     */
+    /**
+     * @param array<string, mixed> $job
+     */
+    private function jobStatusMessage(array $job): string
+    {
+        return match ($job['status']) {
+            ScheduleJobModel::STATUS_QUEUED    => 'Menunggu worker...',
+            ScheduleJobModel::STATUS_RUNNING   => 'Sedang generate (CSP + GA)...',
+            ScheduleJobModel::STATUS_COMPLETED => 'Selesai.',
+            ScheduleJobModel::STATUS_CANCELLED => (string) ($job['error_message'] ?? 'Dibatalkan.'),
+            default                            => (string) ($job['error_message'] ?? 'Gagal.'),
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildGenerateResultFromLog(int $logId): array
+    {
+        $log = $this->logModel->find($logId);
+        if ($log === null) {
+            return ['schedule_log_id' => $logId];
+        }
+
+        $report  = json_decode($log['result_report'] ?? '{}', true) ?: [];
+        $success = in_array($log['status'], ['completed', 'partial'], true);
+
+        $result = [
+            'success'         => $success,
+            'status'          => $log['status'],
+            'summary'         => (string) ($log['error_message'] ?? ''),
+            'schedule_log_id' => $logId,
+            'execution_time'  => $log['execution_time'] ?? null,
+            'report'          => $report,
+        ];
+
+        if ($log['fitness_score'] !== null) {
+            $result['fitness'] = number_format((float) $log['fitness_score'], 4);
+        }
+
+        if (! $success) {
+            $result['message'] = (string) ($log['error_message'] ?? 'Generate gagal.');
+        }
+
+        return $result;
     }
 
     /**

@@ -104,11 +104,17 @@
                     <div class="mt-auto">
                         <div id="generateProgressPanel" class="d-none mb-3">
                             <div class="d-flex justify-content-between mb-1">
-                                <span class="small fw-bold text-primary" id="generateStatusText">Sedang mencari solusi (CSP)...</span>
+                                <span class="small fw-bold text-primary" id="generateStatusText">Menunggu worker...</span>
                                 <span class="small text-muted" id="generateTimeText">00:00</span>
                             </div>
-                            <div class="progress" style="height: 10px;">
-                                <div id="generateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 10%"></div>
+                            <div class="progress mb-2" style="height: 10px;">
+                                <div id="generateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center small text-muted mb-2">
+                                <span id="generateMetaText">—</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnCancelJob">
+                                    <i class="bi bi-x-circle"></i> Batalkan
+                                </button>
                             </div>
                         </div>
 
@@ -162,9 +168,17 @@
 <?= $this->section('scripts') ?>
 <script>
     const RESULT_BASE_URL = <?= json_encode(base_url('kurikulum/schedule/result')) ?>;
+    const GENERATE_URL = <?= json_encode(base_url('kurikulum/schedule/generate')) ?>;
+    const JOB_BASE_URL = <?= json_encode(base_url('kurikulum/schedule/job')) ?>;
+    const CSRF_NAME = <?= json_encode(csrf_token()) ?>;
+    let csrfHash = <?= json_encode(csrf_hash()) ?>;
+
     let timerInterval;
+    let pollInterval;
     let seconds = 0;
     let lastScheduleLogId = null;
+    let activeJobId = null;
+    let tickAttempted = false;
 
     function formatTime(sec) {
         let m = Math.floor(sec / 60).toString().padStart(2, '0');
@@ -220,6 +234,158 @@
         });
     }
 
+    function applyCsrf(response) {
+        if (response && response.csrf_hash) {
+            csrfHash = response.csrf_hash;
+        }
+    }
+
+    function updateJobMeta(response) {
+        const parts = [];
+        if (response.progress !== undefined && response.progress !== null) {
+            parts.push('Progress: ' + response.progress + '%');
+        }
+        if (response.generation !== null && response.generation !== undefined) {
+            parts.push('Generasi: ' + response.generation);
+        }
+        if (response.best_fitness !== null && response.best_fitness !== undefined) {
+            parts.push('Fitness: ' + Number(response.best_fitness).toFixed(4));
+        }
+        $('#generateMetaText').text(parts.length ? parts.join(' · ') : '—');
+    }
+
+    function stopPolling() {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        clearInterval(timerInterval);
+        timerInterval = null;
+        activeJobId = null;
+        $('#btnCancelJob').addClass('d-none');
+    }
+
+    function renderGenerateOutcome(response) {
+        const statusBar = $('#generateProgressBar');
+        const statusText = $('#generateStatusText');
+        const resultAlert = $('#generateResultAlert');
+
+        statusBar.removeClass('progress-bar-animated');
+
+        if (response.success && (response.status === 'completed' || response.status === 'partial')) {
+            const isPartial = response.status === 'partial';
+            statusBar.css('width', '100%').removeClass('bg-primary').addClass(isPartial ? 'bg-warning' : 'bg-success');
+            statusText.text(isPartial ? 'Sebagian berhasil' : 'Berhasil!');
+
+            let resultHtml = `<strong><i class="bi bi-${isPartial ? 'exclamation-triangle-fill' : 'check-circle-fill'}"></i> ${isPartial ? 'Selesai (Parsial)' : 'Selesai!'}</strong><br>`;
+            resultHtml += `${response.summary || 'Jadwal berhasil diproses.'}<br>`;
+            if (response.execution_time) {
+                resultHtml += `Waktu: <strong>${response.execution_time}</strong> detik`;
+            }
+            if (response.fitness) {
+                resultHtml += ` | Fitness: <strong>${response.fitness}</strong>`;
+            }
+
+            if (response.report) {
+                if (response.report.warnings && response.report.warnings.length > 0) {
+                    resultHtml += `<hr class="my-2"><div class="small"><strong>Peringatan (${response.report.warnings.length}):</strong><ul class="mb-0 ps-3">`;
+                    response.report.warnings.slice(0, 5).forEach(w => {
+                        resultHtml += `<li>${escapeHtml(w)}</li>`;
+                    });
+                    if (response.report.warnings.length > 5) {
+                        resultHtml += `<li>...dan ${response.report.warnings.length - 5} lainnya</li>`;
+                    }
+                    resultHtml += `</ul></div>`;
+                }
+
+                if (response.report.unplaced && response.report.unplaced.length > 0) {
+                    resultHtml += `<hr class="my-2"><div class="small"><strong>Blok belum terjadwal (${response.report.unplaced.length}):</strong><ul class="mb-0 ps-3">`;
+                    response.report.unplaced.slice(0, 8).forEach(u => {
+                        const label = [u.kelas_nama, u.mapel_nama, u.guru_nama].filter(Boolean).join(' / ') || `Blok #${u.block_id}`;
+                        resultHtml += `<li>${escapeHtml(label)} — <em>${escapeHtml(u.reason_label || u.reason)}</em></li>`;
+                    });
+                    if (response.report.unplaced.length > 8) {
+                        resultHtml += `<li>...dan ${response.report.unplaced.length - 8} lainnya (lihat Riwayat)</li>`;
+                    }
+                    resultHtml += `</ul></div>`;
+                }
+            }
+
+            const logId = response.schedule_log_id || null;
+            if (logId) {
+                resultHtml += `<hr class="my-2"><a href="#" class="btn btn-sm ${isPartial ? 'btn-warning' : 'btn-success'}" id="btnInlineViewResult"><i class="bi bi-calendar3"></i> Buka halaman hasil jadwal</a>`;
+            }
+
+            resultAlert.removeClass('d-none').addClass(isPartial ? 'alert-warning' : 'alert-success').html(resultHtml);
+
+            if (logId) {
+                $('#btnInlineViewResult').on('click', function(e) {
+                    e.preventDefault();
+                    goToResult(logId);
+                });
+            }
+
+            updateStatusPanel(logId);
+            bindViewResultButton(logId);
+            return;
+        }
+
+        statusBar.css('width', '100%').removeClass('bg-primary').addClass('bg-danger');
+        statusText.text('Gagal');
+        let failHtml = `<strong>Error:</strong> ${escapeHtml(response.message || response.summary || 'Generate gagal.')}`;
+        resultAlert.removeClass('d-none').addClass('alert-danger').html(failHtml);
+        bindGenerateButton();
+    }
+
+    function pollJobStatus(jobId) {
+        $.ajax({
+            url: JOB_BASE_URL + '/' + encodeURIComponent(jobId),
+            type: 'GET',
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(response) {
+                applyCsrf(response);
+
+                if (!response.status && !response.success) {
+                    stopPolling();
+                    renderGenerateOutcome({ success: false, message: response.message || 'Job tidak ditemukan.' });
+                    return;
+                }
+
+                const statusBar = $('#generateProgressBar');
+                const statusText = $('#generateStatusText');
+                const pct = Math.max(0, Math.min(100, parseInt(response.progress, 10) || 0));
+
+                statusBar.css('width', pct + '%');
+                statusText.text(response.message || response.status || 'Memproses...');
+                updateJobMeta(response);
+
+                if (response.status === 'queued' && !tickAttempted) {
+                    tickAttempted = true;
+                    $.ajax({
+                        url: JOB_BASE_URL + '/' + encodeURIComponent(jobId) + '/tick',
+                        type: 'POST',
+                        data: { [CSRF_NAME]: csrfHash },
+                        dataType: 'json',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        complete: function(xhr) {
+                            const tickResp = xhr.responseJSON;
+                            if (tickResp) {
+                                applyCsrf(tickResp);
+                            }
+                        }
+                    });
+                }
+
+                if (response.status === 'completed') {
+                    stopPolling();
+                    renderGenerateOutcome(response);
+                } else if (response.status === 'failed' || response.status === 'cancelled') {
+                    stopPolling();
+                    renderGenerateOutcome({ success: false, message: response.message, status: response.status });
+                }
+            }
+        });
+    }
+
     function startGenerate() {
         if (!confirm('Mulai proses generate? Hasil disimpan sebagai history baru (history lama tetap ada).')) {
             return;
@@ -232,123 +398,68 @@
         const timeText = $('#generateTimeText');
         const resultAlert = $('#generateResultAlert');
 
-        // Reset UI
+        stopPolling();
+        tickAttempted = false;
+
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Memproses...');
         resultAlert.addClass('d-none').removeClass('alert-success alert-danger alert-warning');
         progressPanel.removeClass('d-none');
-        statusBar.css('width', '10%').addClass('progress-bar-animated bg-primary');
-        statusText.text('Inisialisasi engine...');
-        
-        // Start Timer
+        statusBar.css('width', '0%').addClass('progress-bar-animated bg-primary');
+        statusText.text('Mengantrekan job...');
+        $('#generateMetaText').text('—');
+
         seconds = 0;
         timeText.text('00:00');
-        clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             seconds++;
             timeText.text(formatTime(seconds));
-            
-            // Fake progress stages for better UX (since it's a synchronous call)
-            if (seconds === 3) {
-                statusBar.css('width', '30%');
-                statusText.text('Fase 1: Constraint Satisfaction Problem (CSP)...');
-            } else if (seconds === 15) {
-                statusBar.css('width', '60%');
-                statusText.text('Fase 2: Genetic Algorithm (GA) Optimization...');
-            } else if (seconds === 30) {
-                statusBar.css('width', '80%');
-            }
         }, 1000);
 
-        // Make AJAX call to controller
         $.ajax({
-            url: '<?= base_url('kurikulum/schedule/generate') ?>',
+            url: GENERATE_URL,
             type: 'POST',
             data: {
-                <?= csrf_token() ?>: '<?= csrf_hash() ?>',
+                [CSRF_NAME]: csrfHash,
                 generate_mode: $('#generateMode').val(),
                 parent_log_id: $('#generateMode').val() === 'history_repair' ? $('#parentLogId').val() : ''
             },
             dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(response) {
-                clearInterval(timerInterval);
-                statusBar.removeClass('progress-bar-animated');
-                
-                if (response.success) {
-                    const isPartial = response.status === 'partial';
-                    statusBar.css('width', '100%').removeClass('bg-primary').addClass(isPartial ? 'bg-warning' : 'bg-success');
-                    statusText.text(isPartial ? 'Sebagian berhasil' : 'Berhasil!');
-                    
-                    let resultHtml = `<strong><i class="bi bi-${isPartial ? 'exclamation-triangle-fill' : 'check-circle-fill'}"></i> ${isPartial ? 'Selesai (Parsial)' : 'Selesai!'}</strong><br>`;
-                    resultHtml += `${response.summary || 'Jadwal berhasil diproses.'}<br>`;
-                    resultHtml += `Waktu: <strong>${response.execution_time}</strong> detik`;
-                    if (response.fitness) {
-                        resultHtml += ` | Fitness: <strong>${response.fitness}</strong>`;
-                    }
+                applyCsrf(response);
 
-                    if (response.report) {
-                        if (response.report.warnings && response.report.warnings.length > 0) {
-                            resultHtml += `<hr class="my-2"><div class="small"><strong>Peringatan (${response.report.warnings.length}):</strong><ul class="mb-0 ps-3">`;
-                            response.report.warnings.slice(0, 5).forEach(w => {
-                                resultHtml += `<li>${escapeHtml(w)}</li>`;
-                            });
-                            if (response.report.warnings.length > 5) {
-                                resultHtml += `<li>...dan ${response.report.warnings.length - 5} lainnya</li>`;
-                            }
-                            resultHtml += `</ul></div>`;
-                        }
-
-                        if (response.report.unplaced && response.report.unplaced.length > 0) {
-                            resultHtml += `<hr class="my-2"><div class="small"><strong>Blok belum terjadwal (${response.report.unplaced.length}):</strong><ul class="mb-0 ps-3">`;
-                            response.report.unplaced.slice(0, 8).forEach(u => {
-                                const label = [u.kelas_nama, u.mapel_nama, u.guru_nama].filter(Boolean).join(' / ') || `Blok #${u.block_id}`;
-                                resultHtml += `<li>${escapeHtml(label)} — <em>${escapeHtml(u.reason_label || u.reason)}</em></li>`;
-                            });
-                            if (response.report.unplaced.length > 8) {
-                                resultHtml += `<li>...dan ${response.report.unplaced.length - 8} lainnya (lihat Riwayat)</li>`;
-                            }
-                            resultHtml += `</ul></div>`;
-                        }
-                    }
-
-                    const logId = response.schedule_log_id || null;
-                    if (logId) {
-                        resultHtml += `<hr class="my-2"><a href="#" class="btn btn-sm ${isPartial ? 'btn-warning' : 'btn-success'}" id="btnInlineViewResult"><i class="bi bi-calendar3"></i> Buka halaman hasil jadwal</a>`;
-                    }
-
-                    resultAlert.removeClass('d-none').addClass(isPartial ? 'alert-warning' : 'alert-success').html(resultHtml);
-
-                    if (logId) {
-                        $('#btnInlineViewResult').on('click', function(e) {
-                            e.preventDefault();
-                            goToResult(logId);
-                        });
-                    }
-
-                    updateStatusPanel(logId);
-                    bindViewResultButton(logId);
-                } else {
-                    statusBar.css('width', '100%').removeClass('bg-primary').addClass('bg-danger');
+                if (!response.success || !response.job_id) {
+                    stopPolling();
+                    statusBar.removeClass('progress-bar-animated').css('width', '100%').removeClass('bg-primary').addClass('bg-danger');
                     statusText.text('Gagal');
-                    let failHtml = `<strong>Error:</strong> ${escapeHtml(response.message || response.summary || 'Generate gagal.')}`;
-                    if (response.report && response.report.warnings && response.report.warnings.length > 0) {
-                        failHtml += `<hr class="my-2"><div class="small"><strong>Peringatan:</strong><ul class="mb-0 ps-3">`;
-                        response.report.warnings.slice(0, 3).forEach(w => { failHtml += `<li>${escapeHtml(w)}</li>`; });
-                        failHtml += `</ul></div>`;
-                    }
-                    resultAlert.removeClass('d-none').addClass('alert-danger').html(failHtml);
+                    resultAlert.removeClass('d-none').addClass('alert-danger').html(
+                        `<strong>Error:</strong> ${escapeHtml(response.message || 'Gagal mengantrekan generate.')}`
+                    );
                     bindGenerateButton();
+                    return;
                 }
+
+                activeJobId = response.job_id;
+                statusText.text(response.message || 'Job diantrekan. Menunggu worker...');
+                $('#btnCancelJob').removeClass('d-none');
+
+                pollJobStatus(activeJobId);
+                pollInterval = setInterval(function() {
+                    if (activeJobId) {
+                        pollJobStatus(activeJobId);
+                    }
+                }, 2000);
             },
             error: function(xhr) {
-                clearInterval(timerInterval);
+                stopPolling();
                 statusBar.removeClass('progress-bar-animated').css('width', '100%').removeClass('bg-primary').addClass('bg-danger');
                 statusText.text('Error Server');
-                
-                let errorMsg = 'Terjadi kesalahan pada server saat memproses algoritma.';
+
+                let errorMsg = 'Terjadi kesalahan pada server saat mengantrekan generate.';
                 if (xhr.status === 504 || xhr.status === 500) {
-                    errorMsg = 'Timeout atau server overload. Kurangi data atau naikkan timeout PHP.';
+                    errorMsg = 'Timeout atau server overload.';
                 }
-                
+
                 resultAlert.removeClass('d-none').addClass('alert-danger').html(`<strong>Gagal:</strong> ${errorMsg}`);
                 bindGenerateButton();
             }
@@ -360,6 +471,25 @@
 
         $('#generateMode').on('change', function() {
             $('#parentLogPanel').toggle($(this).val() === 'history_repair');
+        });
+
+        $('#btnCancelJob').on('click', function() {
+            if (!activeJobId || !confirm('Batalkan job generate yang sedang berjalan?')) {
+                return;
+            }
+            $.ajax({
+                url: JOB_BASE_URL + '/' + encodeURIComponent(activeJobId) + '/cancel',
+                type: 'POST',
+                data: { [CSRF_NAME]: csrfHash },
+                dataType: 'json',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(response) {
+                    applyCsrf(response);
+                    if (response.success) {
+                        $('#generateStatusText').text(response.message || 'Pembatalan diminta.');
+                    }
+                }
+            });
         });
     });
 </script>
