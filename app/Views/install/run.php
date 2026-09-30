@@ -7,7 +7,6 @@
     <li>Database: <strong><?= esc($wizard['db']['database'] ?? '') ?></strong></li>
     <li>Sekolah: <strong><?= esc($wizard['school']['nama_sekolah'] ?? '') ?></strong></li>
     <li>Admin: <strong><?= esc($wizard['admin']['email'] ?? '') ?></strong></li>
-    <li>Template: <strong><?= ($wizard['template'] ?? 'empty') === 'demo' ? 'Demo legacy' : 'Kosong' ?></strong></li>
 </ul>
 
 <form method="post" action="<?= site_url('install/run') ?>">

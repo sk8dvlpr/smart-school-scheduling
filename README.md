@@ -153,6 +153,7 @@ Disarankan memakai **Laragon** atau **XAMPP** (sudah berisi Apache, MySQL, PHP).
    php spark migrate
    php spark db:seed
    ```
+   Seed hanya mengisi hari & timeslot dasar. Buat akun admin lewat wizard `/install` (disarankan) atau buat user kurikulum lewat database/UI setelah migrasi.
 8. **Buka browser** ke alamat `baseURL` yang Anda atur (contoh: `http://smart-school-scheduling.test` jika pakai Laragon).
 
 ### Opsi B — Linux (Ubuntu/Debian)
@@ -220,9 +221,7 @@ Buka browser: `http://localhost:8080`
 
 ### Login pertama kali
 
-**Instalasi baru (disarankan):** buka `/install` setelah `composer install` — wizard membuat akun **kurikulum admin** dan password yang Anda tentukan saat instalasi.
-
-**Instalasi manual / legacy demo:** `php spark db:seed SmartSchoolSchedulingSeeder` hanya untuk data contoh (bukan default produksi). Kredensial demo ada di dump SQL, bukan password baku produk.
+**Instalasi baru (disarankan):** buka `/install` setelah `composer install` — wizard membuat akun **kurikulum admin** dan password yang Anda tentukan saat instalasi. Nama sekolah diisi sendiri; tidak ada data demo sekolah bawaan.
 
 > Segera ganti password setelah login pertama di lingkungan produksi.
 
@@ -245,8 +244,6 @@ Buka browser: `http://localhost:8080`
 |---------------|--------|
 | `public/` | Titik masuk website — ini yang diarahkan web server |
 | `app/` | Logika aplikasi (kode utama) |
-| `docs/` | Dokumentasi & dump database awal |
-| `docs/database/smart_school_scheduling.sql` | Data contoh untuk instalasi baru |
 | `.env` | Pengaturan database & URL (buat manual di folder utama) |
 | `writable/` | Log, cache, upload — harus bisa ditulis |
 
@@ -261,13 +258,6 @@ Buka browser: `http://localhost:8080`
 | CSS/JS tidak muncul | Periksa `app.baseURL` di `.env` sesuai alamat browser |
 | Generate jadwal lama | Normal untuk banyak kelas; naikkan RAM atau kurangi parameter populasi di config jadwal |
 | `migrate` gagal | Pastikan database kosong sudah dibuat, user MySQL punya hak CREATE TABLE |
-
----
-
-## Dokumentasi teknis
-
-- [PRD lengkap](docs/PRD.md) — spesifikasi produk
-- [Referensi HC & SC](docs/CSP-GA-Constraints-Parameters.md) — detail algoritma
 
 ---
 

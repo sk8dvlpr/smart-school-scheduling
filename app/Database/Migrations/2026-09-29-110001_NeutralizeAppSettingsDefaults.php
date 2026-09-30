@@ -31,7 +31,7 @@ class NeutralizeAppSettingsDefaults extends Migration
 
         if ($this->db->DBDriver === 'MySQLi') {
             $this->db->query(
-                "ALTER TABLE `app_settings` MODIFY `nama_sekolah` VARCHAR(150) NOT NULL DEFAULT 'SMK Tunas Teknologi'"
+                "ALTER TABLE `app_settings` MODIFY `nama_sekolah` VARCHAR(150) NOT NULL DEFAULT 'Smart School Scheduling'"
             );
         }
     }

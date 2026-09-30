@@ -13,7 +13,7 @@ $routes->group('install', static function ($routes) {
     $routes->post('test-database', 'Install\InstallController::testDatabase');
     $routes->get('setup', 'Install\InstallController::setup');
     $routes->post('setup', 'Install\InstallController::setupPost');
-    $routes->match(['get', 'post'], 'run', 'Install\InstallController::run');
+    $routes->match(['GET', 'POST'], 'run', 'Install\InstallController::run');
     $routes->get('finish', 'Install\InstallController::finish');
 });
 

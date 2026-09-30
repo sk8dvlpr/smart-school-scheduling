@@ -58,6 +58,16 @@ document.getElementById('btn-test')?.addEventListener('click', async () => {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const data = await res.json();
+        if (data.csrf?.name && data.csrf?.hash) {
+            let input = form.querySelector('input[name="' + data.csrf.name + '"]');
+            if (!input) {
+                input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = data.csrf.name;
+                form.prepend(input);
+            }
+            input.value = data.csrf.hash;
+        }
         if (data.ok) {
             el.textContent = 'Koneksi berhasil.';
             el.className = 'ms-2 small text-success';

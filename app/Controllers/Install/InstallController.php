@@ -123,7 +123,13 @@ class InstallController extends BaseController
 
         $ok = $this->installer->testConnection($db);
 
-        return $this->response->setJSON(['ok' => $ok]);
+        return $this->response->setJSON([
+            'ok'   => $ok,
+            'csrf' => [
+                'name' => csrf_token(),
+                'hash' => csrf_hash(),
+            ],
+        ]);
     }
 
     /**
@@ -176,7 +182,7 @@ class InstallController extends BaseController
             'email'    => trim((string) $this->request->getPost('admin_email')),
             'password' => (string) $this->request->getPost('admin_password'),
         ];
-        $wizard['template'] = $this->request->getPost('template') === 'demo' ? 'demo' : 'empty';
+        $wizard['template'] = 'empty';
         session()->set('install', $wizard);
 
         return redirect()->to('/install/run');
@@ -242,11 +248,6 @@ class InstallController extends BaseController
 
             $this->installer->runMigrations();
             $this->installer->seedEmptyTemplate();
-
-            if (($wizard['template'] ?? 'empty') === 'demo') {
-                $seeder = \Config\Database::seeder();
-                $seeder->call('SmartSchoolSchedulingSeeder');
-            }
 
             $this->installer->saveSchoolProfile($wizard['school']);
             $this->installer->createAdmin($wizard['admin']);

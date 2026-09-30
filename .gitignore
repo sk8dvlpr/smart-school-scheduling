@@ -1,4 +1,9 @@
 #-------------------------
+# Internal docs (not shipped to clones)
+#-------------------------
+/docs/
+
+#-------------------------
 # Operating System
 #-------------------------
 .DS_Store

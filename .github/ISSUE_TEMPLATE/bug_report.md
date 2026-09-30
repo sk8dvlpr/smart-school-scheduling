@@ -16,4 +16,4 @@ A clear and concise description of the bug.
 **Lingkungan**
 - PHP version:
 - MySQL/MariaDB:
-- Cara install: Docker / shared hosting / Laragon
+- Cara install: Laragon / XAMPP / shared hosting / VPS

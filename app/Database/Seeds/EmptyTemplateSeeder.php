@@ -6,10 +6,9 @@ use App\Libraries\InstallerService;
 use CodeIgniter\Database\Seeder;
 
 /**
- * Seed default untuk instalasi manual: hanya hari + timeslot dasar.
- * Data sekolah (guru, kelas, mapel, dll.) diisi lewat UI / wizard /install.
+ * Template kosong: hari Senin–Sabtu + timeslot dasar (bukan data sekolah spesifik).
  */
-class DatabaseSeeder extends Seeder
+class EmptyTemplateSeeder extends Seeder
 {
     public function run()
     {

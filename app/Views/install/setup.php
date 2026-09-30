@@ -30,15 +30,9 @@
         </div>
     </div>
 
-    <h3 class="h6 text-uppercase text-muted mt-4">Template data</h3>
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="template" id="tpl-empty" value="empty" checked>
-        <label class="form-check-label" for="tpl-empty">Kosong — hari & timeslot dasar saja (disarankan)</label>
-    </div>
-    <div class="form-check">
-        <input class="form-check-input" type="radio" name="template" id="tpl-demo" value="demo">
-        <label class="form-check-label" for="tpl-demo">Demo legacy — muat dump contoh (opsional, bukan default)</label>
-    </div>
+    <p class="small text-muted mt-4 mb-0">
+        Instalasi menyiapkan hari &amp; jam pelajaran dasar saja. Data guru, kelas, mapel, dan ruangan diisi setelah login.
+    </p>
 
     <div class="d-flex justify-content-between mt-4">
         <a href="<?= site_url('install/database') ?>" class="btn btn-outline-secondary">Kembali</a>
