@@ -35,7 +35,7 @@ class GuruProvisioningService
     }
 
     /**
-     * @return array{guru_id: int, user_id: int}
+     * @return array{guru_id: int, user_id: int, temporary_password?: string}
      */
     public function provisionNewGuru(array $userFields): array
     {
@@ -46,11 +46,16 @@ class GuruProvisioningService
         $db->transStart();
 
         try {
-            $userId = $this->insertUser($userFields);
-            $guruId = $this->insertGuruProfile($userId);
+            $created = $this->insertUser($userFields);
+            $userId  = $created['user_id'];
+            $guruId  = $this->insertGuruProfile($userId);
             $this->completeTransaction($db);
 
-            return ['guru_id' => $guruId, 'user_id' => $userId];
+            return [
+                'guru_id'             => $guruId,
+                'user_id'             => $userId,
+                'temporary_password'  => $created['temporary_password'],
+            ];
         } catch (\Throwable $e) {
             $db->transRollback();
 
@@ -59,7 +64,7 @@ class GuruProvisioningService
     }
 
     /**
-     * @return array{guru_id: int, user_id: int}
+     * @return array{guru_id: int, user_id: int, temporary_password?: string}
      */
     public function attachGuruToUser(int $userId): array
     {
@@ -98,7 +103,7 @@ class GuruProvisioningService
     /**
      * Import / upsert by email — creates or updates user then guru profile.
      *
-     * @return array{guru_id: int, user_id: int}
+     * @return array{guru_id: int, user_id: int, temporary_password?: string}
      */
     public function upsertByEmail(array $userFields): array
     {
@@ -115,11 +120,14 @@ class GuruProvisioningService
         $db->transStart();
 
         try {
+            $temporaryPassword = null;
             if ($existingUser) {
                 $userId = (int) $existingUser['id'];
                 $this->updateUser($userId, $userFields);
             } else {
-                $userId = $this->insertUser($userFields);
+                $created = $this->insertUser($userFields);
+                $userId  = $created['user_id'];
+                $temporaryPassword = $created['temporary_password'];
             }
 
             $existingGuru = $this->guruModel->where('user_id', $userId)->first();
@@ -131,7 +139,12 @@ class GuruProvisioningService
 
             $this->completeTransaction($db);
 
-            return ['guru_id' => $guruId, 'user_id' => $userId];
+            $result = ['guru_id' => $guruId, 'user_id' => $userId];
+            if ($temporaryPassword !== null) {
+                $result['temporary_password'] = $temporaryPassword;
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             $db->transRollback();
 
@@ -206,10 +219,14 @@ class GuruProvisioningService
         }
     }
 
-    private function insertUser(array $userFields): int
+    /**
+     * @return array{user_id: int, temporary_password: string}
+     */
+    private function insertUser(array $userFields): array
     {
+        $temporaryPassword = TemporaryPassword::generate();
         $userData = array_merge($userFields, [
-            'password'             => 'password123',
+            'password'             => $temporaryPassword,
             'must_change_password' => 1,
             'is_active'            => 1,
             'is_admin'             => 0,
@@ -219,7 +236,10 @@ class GuruProvisioningService
             throw new RuntimeException(implode(', ', $this->userModel->errors()));
         }
 
-        return (int) $this->userModel->insert($userData);
+        return [
+            'user_id'             => (int) $this->userModel->insert($userData),
+            'temporary_password'  => $temporaryPassword,
+        ];
     }
 
     private function updateUser(int $userId, array $userFields): void

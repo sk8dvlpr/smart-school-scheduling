@@ -53,7 +53,7 @@ class ProfileController extends BaseController
 
         if (! $this->validate([
             'password_lama'      => 'required',
-            'password_baru'      => 'required|min_length[6]',
+            'password_baru'      => 'required|min_length[8]',
             'password_konfirmasi'=> 'required|matches[password_baru]',
         ])) {
             return redirect()->back()->with('error', 'Validasi password gagal.');

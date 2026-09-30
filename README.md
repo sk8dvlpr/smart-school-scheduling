@@ -136,7 +136,9 @@ Disarankan memakai **Laragon** atau **XAMPP** (sudah berisi Apache, MySQL, PHP).
    ```bash
    composer install
    ```
-5. **Buat file pengaturan** `.env` di folder utama proyek (salin isi dari `.env` di komputer pengembang, atau buat baru) dan sesuaikan:
+5. **Instalasi wizard (disarankan):** jalankan `php spark serve`, buka `http://localhost:8080/install`, ikuti langkah database → sekolah & admin. Wizard menulis `.env`, migrasi, dan `writable/installed.lock`.
+
+   **Manual:** buat file `.env` (salin dari `env`) dan sesuaikan:
    ```ini
    app.baseURL = 'http://localhost/smart-school-scheduling/public/'
    database.default.hostname = localhost
@@ -151,6 +153,7 @@ Disarankan memakai **Laragon** atau **XAMPP** (sudah berisi Apache, MySQL, PHP).
    php spark migrate
    php spark db:seed
    ```
+   Seed hanya mengisi hari & timeslot dasar. Buat akun admin lewat wizard `/install` (disarankan) atau buat user kurikulum lewat database/UI setelah migrasi.
 8. **Buka browser** ke alamat `baseURL` yang Anda atur (contoh: `http://smart-school-scheduling.test` jika pakai Laragon).
 
 ### Opsi B — Linux (Ubuntu/Debian)
@@ -218,14 +221,11 @@ Buka browser: `http://localhost:8080`
 
 ### Login pertama kali
 
-Setelah `db:seed`, gunakan akun berikut (data dari instalasi default):
-
-| Peran | Email | Password default |
-|-------|-------|------------------|
-| Kurikulum | `admin@smktunas.sch.id` | `password123` |
-| Kepala Sekolah | `kepsek@smktunas.sch.id` | `password123` |
+**Instalasi baru (disarankan):** buka `/install` setelah `composer install` — wizard membuat akun **kurikulum admin** dan password yang Anda tentukan saat instalasi. Nama sekolah diisi sendiri; tidak ada data demo sekolah bawaan.
 
 > Segera ganti password setelah login pertama di lingkungan produksi.
+
+**Pengembangan:** jika database sudah ada sebelum fitur installer, buat `writable/installed.lock` (file kosong atau JSON) agar aplikasi tidak redirect ke `/install`.
 
 ### Alur kerja singkat (Kurikulum)
 
@@ -244,8 +244,6 @@ Setelah `db:seed`, gunakan akun berikut (data dari instalasi default):
 |---------------|--------|
 | `public/` | Titik masuk website — ini yang diarahkan web server |
 | `app/` | Logika aplikasi (kode utama) |
-| `docs/` | Dokumentasi & dump database awal |
-| `docs/database/smart_school_scheduling.sql` | Data contoh untuk instalasi baru |
 | `.env` | Pengaturan database & URL (buat manual di folder utama) |
 | `writable/` | Log, cache, upload — harus bisa ditulis |
 
@@ -260,13 +258,6 @@ Setelah `db:seed`, gunakan akun berikut (data dari instalasi default):
 | CSS/JS tidak muncul | Periksa `app.baseURL` di `.env` sesuai alamat browser |
 | Generate jadwal lama | Normal untuk banyak kelas; naikkan RAM atau kurangi parameter populasi di config jadwal |
 | `migrate` gagal | Pastikan database kosong sudah dibuat, user MySQL punya hak CREATE TABLE |
-
----
-
-## Dokumentasi teknis
-
-- [PRD lengkap](docs/PRD.md) — spesifikasi produk
-- [Referensi HC & SC](docs/CSP-GA-Constraints-Parameters.md) — detail algoritma
 
 ---
 

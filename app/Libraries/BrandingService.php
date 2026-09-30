@@ -17,19 +17,40 @@ class BrandingService
             return self::$cache;
         }
 
-        $row = null;
+        $nama     = null;
+        $logoPath = null;
+
         try {
-            $row = (new AppSettingModel())->orderBy('id', 'ASC')->first();
+            $fromSettings = trim((string) (SettingsService::get('school.name', '') ?? ''));
+            if ($fromSettings !== '') {
+                $nama = $fromSettings;
+            }
+            $logoFromSettings = SettingsService::get('school.logo_path');
+            if (is_string($logoFromSettings) && $logoFromSettings !== '') {
+                $logoPath = $logoFromSettings;
+            }
         } catch (\Throwable $e) {
-            // Table may not exist yet before migrate
-            $row = null;
+            // settings table may not exist yet
         }
 
-        $nama = trim((string) ($row['nama_sekolah'] ?? '')) ?: 'SMK Tunas Teknologi';
-        $logoPath = $row['logo_path'] ?? null;
-        $logoPath = is_string($logoPath) && $logoPath !== '' ? $logoPath : null;
+        if ($nama === null || $logoPath === null) {
+            try {
+                $row = (new AppSettingModel())->orderBy('id', 'ASC')->first();
+                if ($nama === null) {
+                    $nama = trim((string) ($row['nama_sekolah'] ?? '')) ?: null;
+                }
+                if ($logoPath === null) {
+                    $lp = $row['logo_path'] ?? null;
+                    $logoPath = is_string($lp) && $lp !== '' ? $lp : null;
+                }
+            } catch (\Throwable $e) {
+                // Table may not exist yet before migrate
+            }
+        }
 
-        $fsPath = null;
+        $nama = $nama ?: 'Smart School Scheduling';
+
+        $fsPath  = null;
         $logoUrl = null;
         if ($logoPath !== null) {
             $candidate = FCPATH . $logoPath;
@@ -40,10 +61,10 @@ class BrandingService
         }
 
         self::$cache = [
-            'nama_sekolah'  => $nama,
-            'logo_path'     => $logoPath,
-            'logo_url'      => $logoUrl,
-            'logo_fs_path'  => $fsPath,
+            'nama_sekolah' => $nama,
+            'logo_path'    => $logoPath,
+            'logo_url'     => $logoUrl,
+            'logo_fs_path' => $fsPath,
         ];
 
         return self::$cache;
@@ -52,6 +73,7 @@ class BrandingService
     public static function clearCache(): void
     {
         self::$cache = null;
+        SettingsService::clearCache();
     }
 
     /**
@@ -60,7 +82,7 @@ class BrandingService
     public static function logoDataUri(): ?string
     {
         $branding = self::get();
-        $fs = $branding['logo_fs_path'] ?? null;
+        $fs       = $branding['logo_fs_path'] ?? null;
         if ($fs === null || ! is_file($fs)) {
             return null;
         }

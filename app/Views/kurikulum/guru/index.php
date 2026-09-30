@@ -161,7 +161,7 @@
                             </select>
                         </div>
                         <div class="alert alert-info py-2">
-                            <small><i class="bi bi-info-circle me-1"></i> Password default: <strong>password123</strong> (wajib ganti saat login pertama)</small>
+                            <small><i class="bi bi-info-circle me-1"></i> Password sementara acak akan ditampilkan sekali setelah simpan (wajib ganti saat login pertama).</small>
                         </div>
                     </div>
                 </div>

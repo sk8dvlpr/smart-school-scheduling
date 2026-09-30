@@ -1,0 +1,14 @@
+includes:
+    - app
+
+parameters:
+    level: 5
+    paths:
+        - app/Libraries
+        - app/Filters
+        - app/Models
+    excludePaths:
+        - app/Views/*
+        - app/Database/Migrations/*
+    ignoreErrors:
+        - '#Call to an undefined method#'

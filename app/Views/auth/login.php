@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php
         $branding = $branding ?? \App\Libraries\BrandingService::get();
-        $logoUrl = base_url('imgs/logo.jpeg');
-        $bgUrl = base_url('imgs/background.jpeg');
+        $defaultLogoUrl = base_url('imgs/logo-default.svg');
+        $logoUrl = ! empty($branding['logo_url']) ? $branding['logo_url'] : $defaultLogoUrl;
+        $hasCustomLogo = ! empty($branding['logo_url']);
+        $bgUrl = base_url('imgs/login-hero-default.svg');
     ?>
     <title>Login - <?= esc($branding['nama_sekolah']) ?></title>
-    <link rel="icon" href="<?= esc($logoUrl) ?>" type="image/jpeg">
+    <link rel="icon" href="<?= esc($logoUrl) ?>" type="<?= $hasCustomLogo ? 'image/png' : 'image/svg+xml' ?>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         :root {
-            --login-accent: #B42318;
-            --login-accent-hover: #912018;
+            --login-accent: #2563EB;
+            --login-accent-hover: #1D4ED8;
             --login-text: #1F2937;
             --login-muted: #6B7280;
             --login-border: #E5E7EB;
@@ -46,7 +48,7 @@
         .login-hero {
             flex: 1 1 58%;
             position: relative;
-            background: #374151 url('<?= esc($bgUrl) ?>') center center / cover no-repeat;
+            background: #0F172A url('<?= esc($bgUrl) ?>') center center / cover no-repeat;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
@@ -59,8 +61,8 @@
             inset: 0;
             background: linear-gradient(
                 180deg,
-                rgba(17, 24, 39, 0.15) 0%,
-                rgba(17, 24, 39, 0.55) 100%
+                rgba(15, 23, 42, 0.1) 0%,
+                rgba(15, 23, 42, 0.55) 100%
             );
         }
 
@@ -112,6 +114,7 @@
             height: 96px;
             object-fit: contain;
             margin-bottom: 1rem;
+            border-radius: <?= $hasCustomLogo ? '12px' : '22px' ?>;
         }
 
         .login-brand h1 {
@@ -149,7 +152,7 @@
 
         .login-input-group:focus-within {
             border-color: var(--login-accent);
-            box-shadow: 0 0 0 3px rgba(180, 35, 24, 0.12);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
         .login-input-icon {
@@ -211,7 +214,7 @@
         @media (max-width: 991.98px) {
             .login-page {
                 flex-direction: column;
-                background: #374151 url('<?= esc($bgUrl) ?>') center center / cover no-repeat fixed;
+                background: #0F172A url('<?= esc($bgUrl) ?>') center center / cover no-repeat fixed;
             }
 
             .login-hero {
@@ -224,8 +227,8 @@
             .login-hero::before {
                 background: linear-gradient(
                     180deg,
-                    rgba(17, 24, 39, 0.35) 0%,
-                    rgba(17, 24, 39, 0.7) 100%
+                    rgba(15, 23, 42, 0.25) 0%,
+                    rgba(15, 23, 42, 0.7) 100%
                 );
             }
 
@@ -270,7 +273,7 @@
     <main class="login-panel">
         <div class="login-panel-inner">
             <div class="login-brand">
-                <img src="<?= esc($logoUrl) ?>" alt="Logo <?= esc($branding['nama_sekolah']) ?>" class="login-logo">
+                <img src="<?= esc($logoUrl) ?>" alt="<?= esc($hasCustomLogo ? 'Logo ' . $branding['nama_sekolah'] : 'Smart School Scheduling') ?>" class="login-logo">
                 <h1><?= esc($branding['nama_sekolah']) ?></h1>
                 <p class="login-subtitle">Smart School Scheduling</p>
             </div>
@@ -315,10 +318,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.getElementById('togglePassword').addEventListener('click', function (e) {
+    document.getElementById('togglePassword').addEventListener('click', function () {
         const passwordInput = document.getElementById('password');
         const icon = this.querySelector('i');
-        
+
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
             icon.classList.remove('bi-eye');

@@ -4,6 +4,7 @@ namespace App\Controllers\Kurikulum;
 
 use App\Controllers\BaseController;
 use App\Libraries\BrandingService;
+use App\Libraries\SettingsService;
 use App\Models\AppSettingModel;
 
 class PengaturanController extends BaseController
@@ -21,9 +22,10 @@ class PengaturanController extends BaseController
         $model = new AppSettingModel();
         $settings = $model->orderBy('id', 'ASC')->first();
         if (! $settings) {
+            $defaultName = (string) (SettingsService::get('school.name', 'Smart School Scheduling') ?? 'Smart School Scheduling');
             $model->insert([
-                'nama_sekolah' => 'SMK Tunas Teknologi',
-                'logo_path'    => null,
+                'nama_sekolah' => $defaultName,
+                'logo_path'    => SettingsService::get('school.logo_path'),
             ]);
             $settings = $model->orderBy('id', 'ASC')->first();
         }
@@ -78,11 +80,10 @@ class PengaturanController extends BaseController
                 mkdir($dir, 0755, true);
             }
 
-            $ext = $file->getExtension() ?: 'png';
+            $ext     = $file->getExtension() ?: 'png';
             $newName = 'logo_' . time() . '.' . strtolower($ext);
             $file->move($dir, $newName);
 
-            // Remove old logo if under uploads/branding
             $old = $settings['logo_path'] ?? null;
             if (is_string($old) && str_starts_with($old, 'uploads/branding/') && is_file(FCPATH . $old)) {
                 @unlink(FCPATH . $old);
@@ -100,6 +101,13 @@ class PengaturanController extends BaseController
         }
 
         $model->update($settings['id'], $data);
+
+        $userId = (int) session()->get('user_id');
+        SettingsService::set('school.name', $data['nama_sekolah'], 'string', $userId > 0 ? $userId : null);
+        if (array_key_exists('logo_path', $data)) {
+            SettingsService::set('school.logo_path', $data['logo_path'], 'string', $userId > 0 ? $userId : null);
+        }
+
         BrandingService::clearCache();
 
         return redirect()->to('/kurikulum/pengaturan')->with('success', 'Pengaturan berhasil disimpan.');

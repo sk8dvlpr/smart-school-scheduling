@@ -8,6 +8,8 @@
     <title><?= esc($title ?? $branding['nama_sekolah']) ?></title>
     <?php if (! empty($branding['logo_url'])): ?>
         <link rel="icon" href="<?= esc($branding['logo_url']) ?>" type="image/png">
+    <?php else: ?>
+        <link rel="icon" href="<?= base_url('imgs/logo-default.svg') ?>" type="image/svg+xml">
     <?php endif; ?>
     
     <!-- Bootstrap 5 -->
@@ -29,7 +31,7 @@
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <div class="sidebar-logo-wrap">
-                        <img src="<?= base_url('imgs/logo.jpeg') ?>" alt="Logo <?= esc($branding['nama_sekolah']) ?>" class="sidebar-logo-img">
+                        <img src="<?= esc($branding['logo_url'] ?? base_url('imgs/logo-default.svg')) ?>" alt="Logo <?= esc($branding['nama_sekolah']) ?>" class="sidebar-logo-img">
                     </div>
                     <div class="sidebar-brand-name"><?= esc($branding['nama_sekolah']) ?></div>
                 </div>

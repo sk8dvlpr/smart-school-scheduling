@@ -10,7 +10,7 @@ class CreateAppSettingsTable extends Migration
     {
         $this->forge->addField([
             'id'           => ['type' => 'INT', 'auto_increment' => true],
-            'nama_sekolah' => ['type' => 'VARCHAR', 'constraint' => 150, 'default' => 'SMK Tunas Teknologi'],
+            'nama_sekolah' => ['type' => 'VARCHAR', 'constraint' => 150, 'default' => 'Smart School Scheduling'],
             'logo_path'    => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
             'created_at'   => ['type' => 'DATETIME', 'null' => true],
             'updated_at'   => ['type' => 'DATETIME', 'null' => true],
@@ -19,7 +19,7 @@ class CreateAppSettingsTable extends Migration
         $this->forge->createTable('app_settings');
 
         $this->db->table('app_settings')->insert([
-            'nama_sekolah' => 'SMK Tunas Teknologi',
+            'nama_sekolah' => 'Smart School Scheduling',
             'logo_path'    => null,
             'created_at'   => date('Y-m-d H:i:s'),
             'updated_at'   => date('Y-m-d H:i:s'),

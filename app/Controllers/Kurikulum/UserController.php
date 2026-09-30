@@ -3,6 +3,7 @@
 namespace App\Controllers\Kurikulum;
 
 use App\Controllers\BaseController;
+use App\Libraries\TemporaryPassword;
 use App\Models\UserModel;
 
 class UserController extends BaseController
@@ -27,7 +28,8 @@ class UserController extends BaseController
     {
         $data = $this->normalizeUserPost($this->request->getPost());
         $data['is_active'] = isset($data['is_active']) ? 1 : 0;
-        $data['password'] = 'password123';
+        $temporaryPassword = TemporaryPassword::generate();
+        $data['password'] = $temporaryPassword;
         $data['must_change_password'] = 1;
         $data['is_admin'] = $this->resolveIsAdminFlag($data['role'] ?? '', null);
 
@@ -48,7 +50,11 @@ class UserController extends BaseController
 
         $this->userModel->insert($data);
 
-        return redirect()->to('/kurikulum/users')->with('success', 'User berhasil ditambahkan. Password default: password123');
+        return redirect()->to('/kurikulum/users')->with(
+            'success',
+            'User berhasil ditambahkan. Password sementara (sekali tampil): ' . $temporaryPassword
+            . ' — wajib diganti saat login pertama.',
+        );
     }
 
     public function show(int $id)
@@ -163,12 +169,16 @@ class UserController extends BaseController
             return redirect()->to('/kurikulum/users')->with('error', 'User tidak ditemukan.');
         }
 
+        $temporaryPassword = TemporaryPassword::generate();
         $this->userModel->update($id, [
-            'password'             => 'password123',
+            'password'             => $temporaryPassword,
             'must_change_password' => 1,
         ]);
 
-        return redirect()->to('/kurikulum/users')->with('success', 'Password user ' . $user['nama'] . ' direset ke password123.');
+        return redirect()->to('/kurikulum/users')->with(
+            'success',
+            'Password user ' . $user['nama'] . ' direset. Password sementara (sekali tampil): ' . $temporaryPassword,
+        );
     }
 
     private function normalizeUserPost(array $data): array

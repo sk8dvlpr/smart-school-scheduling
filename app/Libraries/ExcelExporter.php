@@ -7,6 +7,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use App\Libraries\TemporaryPassword;
 use App\Models\JadwalModel;
 use App\Models\KelasModel;
 use App\Models\GuruModel;
@@ -109,14 +110,14 @@ class ExcelExporter
 
         $lastCol = chr(ord('A') + count($hari));
         $sheet->mergeCells('A1:' . $lastCol . '1');
-        $sheet->setCellValue('A1', 'SMART SCHOOL SCHEDULING');
+        $sheet->setCellValue('A1', TemporaryPassword::sanitizeSpreadsheetValue('SMART SCHOOL SCHEDULING'));
         $sheet->mergeCells('A2:' . $lastCol . '2');
-        $sheet->setCellValue('A2', 'Jadwal: ' . $title);
+        $sheet->setCellValue('A2', TemporaryPassword::sanitizeSpreadsheetValue('Jadwal: ' . $title));
 
         $row = 4;
         $col = 'A';
         foreach ($hari as $h) {
-            $sheet->setCellValue($col . $row, $h['nama']);
+            $sheet->setCellValue($col . $row, TemporaryPassword::sanitizeSpreadsheetValue($h['nama']));
             $sheet->getColumnDimension($col)->setWidth(28);
             $col++;
         }
@@ -147,11 +148,11 @@ class ExcelExporter
 
                 if ($tipe === 'kegiatan_khusus') {
                     $text = strtoupper($slot['keterangan'] ?? 'KEGIATAN') . "\n" . $timeLabel;
-                    $sheet->setCellValue($col . $row, $text);
+                    $sheet->setCellValue($col . $row, TemporaryPassword::sanitizeSpreadsheetValue($text));
                     $sheet->getStyle($col . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFDEE2E6');
                 } elseif ($tipe === 'istirahat') {
                     $text = 'ISTIRAHAT' . "\n" . $timeLabel;
-                    $sheet->setCellValue($col . $row, $text);
+                    $sheet->setCellValue($col . $row, TemporaryPassword::sanitizeSpreadsheetValue($text));
                     $sheet->getStyle($col . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFE9ECEF');
                 } else {
                     $cell = $jadwalIndex[$hariId][(int) $slot['id']] ?? null;
@@ -167,7 +168,7 @@ class ExcelExporter
                         } elseif ($viewType === 'ruangan') {
                             $text .= "\nRombel: " . $cell['kelas_nama'] . "\n" . $cell['guru_nama'];
                         }
-                        $sheet->setCellValue($col . $row, "JP {$slot['jam_ke']}\n{$timeLabel}\n{$text}");
+                        $sheet->setCellValue($col . $row, TemporaryPassword::sanitizeSpreadsheetValue("JP {$slot['jam_ke']}\n{$timeLabel}\n{$text}"));
                         $hexColor = str_replace('#', '', $cell['mapel_warna'] ?? '');
                         if (strlen($hexColor) === 6) {
                             $sheet->getStyle($col . $row)->getFill()
@@ -176,7 +177,7 @@ class ExcelExporter
                             $sheet->getStyle($col . $row)->getFont()->getColor()->setARGB('FFFFFFFF');
                         }
                     } else {
-                        $sheet->setCellValue($col . $row, "JP {$slot['jam_ke']}\n{$timeLabel}\n-");
+                        $sheet->setCellValue($col . $row, TemporaryPassword::sanitizeSpreadsheetValue("JP {$slot['jam_ke']}\n{$timeLabel}\n-"));
                     }
                 }
 

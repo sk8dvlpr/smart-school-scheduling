@@ -38,6 +38,8 @@ class Filters extends BaseFilters
         'kurikulum'      => \App\Filters\KurikulumFilter::class,
         'guru'           => \App\Filters\GuruFilter::class,
         'kepala_sekolah' => \App\Filters\KepalaSekolahFilter::class,
+        'login_throttle' => \App\Filters\LoginThrottleFilter::class,
+        'install'        => \App\Filters\InstallFilter::class,
     ];
 
     /**
@@ -55,13 +57,14 @@ class Filters extends BaseFilters
      */
     public array $required = [
         'before' => [
+            'install',
             'forcehttps', // Force Global Secure Requests
             'pagecache',  // Web Page Caching
         ],
         'after' => [
             'pagecache',   // Web Page Caching
             'performance', // Performance Metrics
-            'toolbar',     // Debug Toolbar
+            // DebugToolbar only when not production (see $globals)
         ],
     ];
 
@@ -77,12 +80,12 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            'csrf' => ['except' => ['kurikulum/schedule/generate']],
+            'csrf',
             // 'invalidchars',
         ],
         'after' => [
             // 'honeypot',
-            // 'secureheaders',
+            'secureheaders',
         ],
     ];
 
@@ -110,5 +113,12 @@ class Filters extends BaseFilters
      *
      * @var array<string, array<string, list<string>>>
      */
-    public array $filters = [];
+    public array $filters = [
+        'login_throttle' => [
+            'before' => ['auth/login'],
+        ],
+        'toolbar' => [
+            'after' => ENVIRONMENT === 'production' ? [] : ['*'],
+        ],
+    ];
 }

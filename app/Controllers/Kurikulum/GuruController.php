@@ -75,7 +75,13 @@ class GuruController extends BaseController
         }
 
         return redirect()->to('/kurikulum/guru/' . $result['guru_id'] . '/mapel')
-            ->with('success', 'Guru berhasil ditambahkan. Password default: password123');
+            ->with(
+                'success',
+                isset($result['temporary_password'])
+                    ? 'Guru berhasil ditambahkan. Password sementara (sekali tampil): ' . $result['temporary_password']
+                      . ' — wajib diganti saat login pertama.'
+                    : 'Profil guru berhasil ditautkan ke user yang ada.',
+            );
     }
 
     public function show(int $id)
