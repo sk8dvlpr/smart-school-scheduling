@@ -80,6 +80,14 @@ class UserController extends BaseController
             return redirect()->to('/kurikulum/users')->with('error', 'User tidak ditemukan.');
         }
 
+        // Non-admins cannot modify kurikulum admin accounts.
+        if ((int) ($existing['is_admin'] ?? 0) === 1 && ! UserModel::sessionIsKurikulumAdmin()) {
+            return redirect()->to('/kurikulum/users')->with(
+                'error',
+                'Hanya kurikulum admin yang dapat mengubah akun admin.',
+            );
+        }
+
         if ($existing['role'] === 'guru') {
             return redirect()->back()->withInput()->with(
                 'error',
@@ -137,6 +145,18 @@ class UserController extends BaseController
     {
         if ((int) session()->get('user_id') === $id) {
             return redirect()->to('/kurikulum/users')->with('error', 'Tidak dapat menghapus akun yang sedang login.');
+        }
+
+        $existing = $this->userModel->find($id);
+        if (! $existing) {
+            return redirect()->to('/kurikulum/users')->with('error', 'User tidak ditemukan.');
+        }
+
+        if ((int) ($existing['is_admin'] ?? 0) === 1 && ! UserModel::sessionIsKurikulumAdmin()) {
+            return redirect()->to('/kurikulum/users')->with(
+                'error',
+                'Hanya kurikulum admin yang dapat menghapus akun admin.',
+            );
         }
 
         $db = \Config\Database::connect();

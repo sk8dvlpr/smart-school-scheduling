@@ -3,6 +3,7 @@
 namespace App\Controllers\Guru;
 
 use App\Controllers\BaseController;
+use App\Libraries\HariIdValidator;
 use App\Models\GuruPreferensiModel;
 use App\Models\HariModel;
 use App\Models\TimeslotModel;
@@ -45,7 +46,8 @@ class PreferensiController extends BaseController
 
         $prefModel = new GuruPreferensiModel();
         $dayPost   = $this->request->getPost('day');
-        $rows      = $prefModel->fromFormPost(is_array($dayPost) ? $dayPost : []);
+        $dayPost   = HariIdValidator::filterDayPost(is_array($dayPost) ? $dayPost : []);
+        $rows      = $prefModel->fromFormPost($dayPost);
         $prefModel->replaceForGuru($guruId, $rows);
 
         return redirect()->to('/guru/preferensi')->with('success', 'Preferensi jadwal berhasil disimpan.');

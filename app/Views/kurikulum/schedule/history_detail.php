@@ -1,63 +1,61 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="fw-bold mb-0">Detail History #<?= (int) $log['id'] ?></h4>
-            <p class="text-muted mb-0"><?= esc($log['label'] ?? '') ?> — <?= esc($log['generate_mode'] ?? 'fresh') ?></p>
-        </div>
-        <div>
-            <?php if (in_array($log['status'], ['completed', 'partial'], true)): ?>
-                <a href="<?= base_url('kurikulum/schedule/result?schedule_log_id=' . (int) $log['id']) ?>" class="btn btn-primary me-2">
-                    <i class="bi bi-calendar3"></i> Lihat Jadwal
-                </a>
-            <?php endif; ?>
-            <?php if ($is_published): ?>
-                <span class="badge bg-success me-2"><i class="bi bi-broadcast"></i> Published</span>
-                <?php
-                    $appr = $log['approval_status'] ?? null;
-                    if ($appr === 'approved'): ?>
-                    <span class="badge bg-primary me-2"><i class="bi bi-check-circle"></i> Disetujui Kepsek</span>
-                <?php elseif ($appr === 'rejected'): ?>
-                    <span class="badge bg-danger me-2"><i class="bi bi-x-circle"></i> Ditolak Kepsek</span>
-                <?php else: ?>
-                    <span class="badge bg-warning text-dark me-2"><i class="bi bi-hourglass-split"></i> Menunggu Acc Kepsek</span>
-                <?php endif; ?>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Detail History #<?= (int) $log['id'] ?></h1>
+        <p class="s3-page-desc"><?= esc($log['label'] ?? '') ?> — <?= esc($log['generate_mode'] ?? 'fresh') ?></p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <?php if (in_array($log['status'], ['completed', 'partial'], true)): ?>
+            <a href="<?= base_url('kurikulum/schedule/result?schedule_log_id=' . (int) $log['id']) ?>" class="btn btn-primary btn-sm">
+                <i class="bi bi-calendar3"></i> Lihat Jadwal
+            </a>
+        <?php endif; ?>
+        <?php if ($is_published): ?>
+            <span class="badge bg-success align-self-center"><i class="bi bi-broadcast"></i> Published</span>
+            <?php
+                $appr = $log['approval_status'] ?? null;
+                if ($appr === 'approved'): ?>
+                <span class="badge bg-primary align-self-center"><i class="bi bi-check-circle"></i> Disetujui Kepsek</span>
+            <?php elseif ($appr === 'rejected'): ?>
+                <span class="badge bg-danger align-self-center"><i class="bi bi-x-circle"></i> Ditolak Kepsek</span>
             <?php else: ?>
-                <form action="<?= base_url('kurikulum/schedule/publish/' . (int) $log['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Publish history ini ke Kepala Sekolah untuk ditinjau?<?= $log['status'] === 'partial' ? ' PERINGATAN: status partial (' . $pct . '% terisi).' : '' ?> Guru baru melihat setelah Kepsek menyetujui.');">
-                    <?= csrf_field() ?>
-                    <button type="submit" class="btn btn-success"><i class="bi bi-broadcast"></i> Publish</button>
-                </form>
+                <span class="badge bg-warning text-dark align-self-center"><i class="bi bi-hourglass-split"></i> Menunggu Acc Kepsek</span>
             <?php endif; ?>
-            <a href="<?= base_url('kurikulum/schedule/logs') ?>" class="btn btn-outline-secondary ms-2">Kembali</a>
-        </div>
+        <?php else: ?>
+            <form action="<?= base_url('kurikulum/schedule/publish/' . (int) $log['id']) ?>" method="post" class="d-inline" onsubmit="return confirm('Publish history ini ke Kepala Sekolah untuk ditinjau?<?= $log['status'] === 'partial' ? ' PERINGATAN: status partial (' . $pct . '% terisi).' : '' ?> Guru baru melihat setelah Kepsek menyetujui.');">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-broadcast"></i> Publish</button>
+            </form>
+        <?php endif; ?>
+        <a href="<?= base_url('kurikulum/schedule/logs') ?>" class="btn btn-outline-secondary btn-sm">Kembali</a>
     </div>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm"><div class="card-body">
-            <div class="text-muted small">Status</div>
-            <div class="fw-bold"><?= esc($log['status']) ?></div>
-        </div></div>
+        <div class="s3-kpi">
+            <div class="s3-kpi-label">Status</div>
+            <div class="s3-kpi-value" style="font-size:1.25rem;"><?= esc($log['status']) ?></div>
+        </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm"><div class="card-body">
-            <div class="text-muted small">% Terisi</div>
-            <div class="fw-bold"><?= $pct ?>%</div>
-        </div></div>
+        <div class="s3-kpi">
+            <div class="s3-kpi-label">% Terisi</div>
+            <div class="s3-kpi-value"><?= $pct ?>%</div>
+        </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm"><div class="card-body">
-            <div class="text-muted small">Fitness</div>
-            <div class="fw-bold"><?= $log['fitness_score'] ? number_format((float) $log['fitness_score'], 4) : '-' ?></div>
-        </div></div>
+        <div class="s3-kpi">
+            <div class="s3-kpi-label">Fitness</div>
+            <div class="s3-kpi-value" style="font-size:1.25rem;"><?= $log['fitness_score'] ? number_format((float) $log['fitness_score'], 4) : '-' ?></div>
+        </div>
     </div>
     <div class="col-md-3">
-        <div class="card border-0 shadow-sm"><div class="card-body">
-            <div class="text-muted small">Durasi</div>
-            <div class="fw-bold">
+        <div class="s3-kpi">
+            <div class="s3-kpi-label">Durasi</div>
+            <div class="s3-kpi-value" style="font-size:1.25rem;">
                 <?php 
                     if (isset($log['execution_time'])) {
                         echo gmdate("H:i:s", (int)$log['execution_time']);
@@ -66,14 +64,14 @@
                     }
                 ?>
             </div>
-        </div></div>
+        </div>
     </div>
 </div>
 
 <?php if (!empty($report['stats']['ga']['violations'])): ?>
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-bold">Kualitas Jadwal (GA)</div>
-    <div class="card-body small">
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Kualitas Jadwal (GA)</h6>
         <?php
             $fit = (float) ($report['stats']['ga']['fitness'] ?? 0);
             $penalty = $fit > 0 ? (1 / $fit) - 1 : 0;
@@ -84,7 +82,7 @@
             elseif ($qScore >= 60) $bgClass = 'bg-info';
             elseif ($qScore >= 40) $bgClass = 'bg-warning';
         ?>
-        <div class="mb-3 d-flex align-items-center gap-3">
+        <div class="mb-3 d-flex flex-wrap align-items-center gap-3">
             <div>
                 Quality Score: 
                 <span class="fs-4 fw-bold <?= str_replace('bg-', 'text-', $bgClass) ?>"><?= number_format($qScore, 1) ?>%</span>
@@ -146,12 +144,12 @@
 <?php endif; ?>
 
 <?php if (!empty($suggestions)): ?>
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-bold"><i class="bi bi-lightbulb text-warning"></i> Saran Perbaikan</div>
+<div class="card mb-4">
     <div class="card-body">
+        <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb text-warning"></i> Saran Perbaikan</h6>
         <p class="small text-muted mb-3">Rekomendasi berdasarkan unit yang belum terjadwal dan peringatan dari proses generate.</p>
         <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
+            <table class="table table-sm table-hover align-middle mb-0">
                 <thead>
                     <tr>
                         <th>Penyebab</th>
@@ -186,9 +184,9 @@
 <?php endif; ?>
 
 <?php if (!empty($report['unplaced'])): ?>
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-bold text-danger">Diagnostik Partial — Unit Belum Terplace</div>
+<div class="card mb-4">
     <div class="card-body">
+        <h6 class="fw-bold text-danger mb-3">Diagnostik Partial — Unit Belum Terplace</h6>
         <ul class="small mb-0">
             <?php foreach (array_slice($report['unplaced'], 0, 30) as $u): ?>
             <li>
@@ -205,20 +203,22 @@
 <?php endif; ?>
 
 <?php if (!empty($report['fill_report'])): ?>
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-bold">Fill Report per Rombel</div>
-    <div class="card-body table-responsive">
-        <table class="table table-sm">
-            <thead><tr><th>Rombel</th><th>Detail JP/hari</th></tr></thead>
-            <tbody>
-            <?php foreach ($report['fill_report'] as $kelasNama => $days): ?>
-                <tr>
-                    <td><?= esc($kelasNama) ?></td>
-                    <td class="small"><?= esc(implode(' | ', $days)) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Fill Report per Rombel</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead><tr><th>Rombel</th><th>Detail JP/hari</th></tr></thead>
+                <tbody>
+                <?php foreach ($report['fill_report'] as $kelasNama => $days): ?>
+                    <tr>
+                        <td><?= esc($kelasNama) ?></td>
+                        <td class="small"><?= esc(implode(' | ', $days)) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 <?php endif; ?>

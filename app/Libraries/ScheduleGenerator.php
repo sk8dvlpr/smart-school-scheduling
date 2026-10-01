@@ -23,6 +23,27 @@ class ScheduleGenerator
             return $results;
         }
 
+        $kelasCount = $db->table('kelas')
+            ->where('tahun_ajaran_id', $tahunAjaranId)
+            ->where('deleted_at IS NULL')
+            ->countAllResults();
+        $results[] = [
+            'rule'    => 'Data Rombel',
+            'status'  => $kelasCount > 0,
+            'message' => $kelasCount > 0
+                ? "Terdapat {$kelasCount} rombel pada tahun ajaran aktif."
+                : 'Belum ada rombel. Tambahkan master data Rombel terlebih dahulu.',
+        ];
+
+        $ruanganCount = $db->table('ruangan')->where('deleted_at IS NULL')->countAllResults();
+        $results[] = [
+            'rule'    => 'Data Ruangan',
+            'status'  => $ruanganCount > 0,
+            'message' => $ruanganCount > 0
+                ? "Terdapat {$ruanganCount} ruangan/lab terdaftar."
+                : 'Belum ada ruangan. Tambahkan Ruangan/Lab di master data.',
+        ];
+
         $kelasTanpaRoom = $db->table('kelas')
             ->where('tahun_ajaran_id', $tahunAjaranId)
             ->where('deleted_at IS NULL')
@@ -30,10 +51,12 @@ class ScheduleGenerator
             ->countAllResults();
         $results[] = [
             'rule'    => 'Homeroom Rombel',
-            'status'  => $kelasTanpaRoom === 0,
-            'message' => $kelasTanpaRoom === 0
-                ? 'Semua rombel memiliki ruangan (Homeroom).'
-                : "$kelasTanpaRoom rombel belum di-assign ruangan.",
+            'status'  => $kelasCount > 0 && $kelasTanpaRoom === 0,
+            'message' => $kelasCount === 0
+                ? 'Lewati — belum ada rombel.'
+                : ($kelasTanpaRoom === 0
+                    ? 'Semua rombel memiliki ruangan (Homeroom).'
+                    : "$kelasTanpaRoom rombel belum di-assign ruangan."),
         ];
 
         $kelasTanpaMapel = $db->table('kelas')
@@ -47,12 +70,14 @@ class ScheduleGenerator
             ->getResultArray();
         $results[] = [
             'rule'    => 'Kurikulum Rombel (kelas_mapel)',
-            'status'  => count($kelasTanpaMapel) === 0,
-            'message' => count($kelasTanpaMapel) === 0
-                ? 'Setiap rombel memiliki minimal 1 kelas_mapel.'
-                : count($kelasTanpaMapel) . ' rombel belum punya kelas_mapel: '
-                    . implode(', ', array_slice(array_column($kelasTanpaMapel, 'nama'), 0, 5))
-                    . (count($kelasTanpaMapel) > 5 ? '...' : ''),
+            'status'  => $kelasCount > 0 && count($kelasTanpaMapel) === 0,
+            'message' => $kelasCount === 0
+                ? 'Lewati — belum ada rombel.'
+                : (count($kelasTanpaMapel) === 0
+                    ? 'Setiap rombel memiliki minimal 1 kelas_mapel.'
+                    : count($kelasTanpaMapel) . ' rombel belum punya kelas_mapel: '
+                        . implode(', ', array_slice(array_column($kelasTanpaMapel, 'nama'), 0, 5))
+                        . (count($kelasTanpaMapel) > 5 ? '...' : '')),
         ];
 
         $timeslotModel = new TimeslotModel();
@@ -110,11 +135,13 @@ class ScheduleGenerator
         }
         $results[] = [
             'rule'    => 'Kapasitas Guru per Mapel',
-            'status'  => count($mapelSupplyShort) === 0,
-            'message' => count($mapelSupplyShort) === 0
-                ? 'Kapasitas guru_mapel mencukupi kebutuhan per mapel.'
-                : 'Mapel kurang kapasitas guru: ' . implode(', ', array_slice($mapelSupplyShort, 0, 5))
-                    . (count($mapelSupplyShort) > 5 ? '...' : ''),
+            'status'  => $kelasCount > 0 && count($aggregatedDemand) > 0 && count($mapelSupplyShort) === 0,
+            'message' => $kelasCount === 0 || count($aggregatedDemand) === 0
+                ? 'Belum ada kebutuhan JP dari kelas_mapel. Lengkapi kurikulum rombel dulu.'
+                : (count($mapelSupplyShort) === 0
+                    ? 'Kapasitas guru_mapel mencukupi kebutuhan per mapel.'
+                    : 'Mapel kurang kapasitas guru: ' . implode(', ', array_slice($mapelSupplyShort, 0, 5))
+                        . (count($mapelSupplyShort) > 5 ? '...' : '')),
         ];
 
         $kejuruanMismatch = $db->table('kelas_mapel')
@@ -149,10 +176,12 @@ class ScheduleGenerator
         }
         $results[] = [
             'rule'    => 'Guru Eligible per Mapel',
-            'status'  => count($mapelNoGuru) === 0,
-            'message' => count($mapelNoGuru) === 0
-                ? 'Setiap mapel yang dibutuhkan punya minimal 1 guru_mapel.'
-                : 'Mapel tanpa guru: ' . implode(', ', $mapelNoGuru),
+            'status'  => count($mapelNeeded) > 0 && count($mapelNoGuru) === 0,
+            'message' => count($mapelNeeded) === 0
+                ? 'Belum ada mapel pada kelas_mapel. Lengkapi kurikulum rombel dulu.'
+                : (count($mapelNoGuru) === 0
+                    ? 'Setiap mapel yang dibutuhkan punya minimal 1 guru_mapel.'
+                    : 'Mapel tanpa guru: ' . implode(', ', $mapelNoGuru)),
         ];
 
         $labInvalid = $db->table('kelas_mapel')
@@ -259,24 +288,28 @@ class ScheduleGenerator
                     : 'Data Hari atau Timeslot kosong.'),
         ];
 
-        $totalDemand = (int) $db->table('kelas_mapel')
+        $totalDemandRow = $db->table('kelas_mapel')
             ->selectSum('jam_per_minggu', 'total')
             ->where('tahun_ajaran_id', $tahunAjaranId)
             ->get()
-            ->getRow()->total;
+            ->getRow();
+        $totalDemand = (int) ($totalDemandRow->total ?? 0);
 
-        $totalSupply = (int) $db->table('guru_mapel')
+        $totalSupplyRow = $db->table('guru_mapel')
             ->selectSum('max_jam_per_minggu', 'total')
             ->get()
-            ->getRow()->total;
+            ->getRow();
+        $totalSupply = (int) ($totalSupplyRow->total ?? 0);
 
-        $capacityOk = $totalSupply >= $totalDemand;
+        $capacityOk = $totalDemand > 0 && $totalSupply >= $totalDemand;
         $results[] = [
             'rule'    => 'Kapasitas Guru Mingguan',
             'status'  => $capacityOk,
-            'message' => $capacityOk
-                ? "Kapasitas guru_mapel mencukupi (butuh {$totalDemand} JP, cap {$totalSupply} JP/minggu)."
-                : "Kapasitas guru_mapel tidak cukup: butuh {$totalDemand} JP, cap {$totalSupply} JP/minggu.",
+            'message' => $totalDemand === 0
+                ? 'Belum ada kebutuhan JP (kelas_mapel kosong). Isi kurikulum rombel sebelum generate.'
+                : ($capacityOk
+                    ? "Kapasitas guru_mapel mencukupi (butuh {$totalDemand} JP, cap {$totalSupply} JP/minggu)."
+                    : "Kapasitas guru_mapel tidak cukup: butuh {$totalDemand} JP, cap {$totalSupply} JP/minggu."),
         ];
 
         return $results;

@@ -1,29 +1,27 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h4 class="fw-bold mb-0">Lihat Jadwal Sekolah</h4>
-            <p class="text-muted mb-0">
-                <?php if ($active_ta): ?>
-                    Tahun ajaran: <?= esc($active_ta['nama']) ?>
-                <?php else: ?>
-                    Tidak ada tahun ajaran aktif.
-                <?php endif; ?>
-            </p>
-        </div>
-        <?php if ($active_ta && $has_jadwal): ?>
-        <div class="d-flex gap-2">
-            <a href="<?= base_url('kepala-sekolah/jadwal/export/pdf-all') ?>" class="btn btn-outline-danger" target="_blank">
-                <i class="bi bi-file-pdf"></i> Export Semua Rombel (PDF)
-            </a>
-            <a href="<?= base_url('kepala-sekolah/jadwal/export/excel-all') ?>" class="btn btn-outline-success">
-                <i class="bi bi-file-excel"></i> Export Semua Rombel (Excel)
-            </a>
-        </div>
-        <?php endif; ?>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Lihat Jadwal Sekolah</h1>
+        <p class="s3-page-desc">
+            <?php if ($active_ta): ?>
+                Tahun ajaran: <?= esc($active_ta['nama']) ?>
+            <?php else: ?>
+                Tidak ada tahun ajaran aktif.
+            <?php endif; ?>
+        </p>
     </div>
+    <?php if ($active_ta && $has_jadwal): ?>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kepala-sekolah/jadwal/export/pdf-all') ?>" class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-pdf"></i> Export Semua Rombel (PDF)
+        </a>
+        <a href="<?= base_url('kepala-sekolah/jadwal/export/excel-all') ?>" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-excel"></i> Export Semua Rombel (Excel)
+        </a>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php if (! $active_ta): ?>
@@ -59,7 +57,7 @@
         default    => 'Menunggu Persetujuan',
     };
 ?>
-<div class="card border-0 shadow-sm mb-4">
+<div class="card mb-4">
     <div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
@@ -100,7 +98,7 @@
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body">
         <ul class="nav nav-tabs mb-4" id="jadwalTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -126,8 +124,8 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end justify-content-end">
-                        <button class="btn btn-danger me-2" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                    <div class="col-md-6 d-flex flex-wrap align-items-end justify-content-end gap-2">
+                        <button class="btn btn-danger" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
                         <button class="btn btn-success" onclick="exportData('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
                     </div>
                 </div>
@@ -150,8 +148,8 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end justify-content-end">
-                        <button class="btn btn-danger me-2" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                    <div class="col-md-6 d-flex flex-wrap align-items-end justify-content-end gap-2">
+                        <button class="btn btn-danger" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
                         <button class="btn btn-success" onclick="exportData('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
                     </div>
                 </div>
@@ -174,8 +172,8 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end justify-content-end">
-                        <button class="btn btn-danger me-2" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                    <div class="col-md-6 d-flex flex-wrap align-items-end justify-content-end gap-2">
+                        <button class="btn btn-danger" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
                         <button class="btn btn-success" onclick="exportData('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
                     </div>
                 </div>

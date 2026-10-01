@@ -5,31 +5,29 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <h4 class="fw-bold mb-0">Laporan Jam Mengajar Guru</h4>
-            <p class="text-muted mb-0">
-                <?php if ($active_ta): ?>
-                    Tahun ajaran: <?= esc($active_ta['nama']) ?>
-                <?php else: ?>
-                    Tidak ada tahun ajaran aktif.
-                <?php endif; ?>
-            </p>
-        </div>
-        <?php if ($active_ta && $has_jadwal && $rows !== []): ?>
-        <div class="d-flex gap-2">
-            <a href="<?= base_url('kepala-sekolah/laporan/guru-jam/export?format=pdf&guru_id=' . (int) $filter_guru . '&mapel_id=' . (int) $filter_mapel) ?>"
-               class="btn btn-outline-danger" target="_blank">
-                <i class="bi bi-file-pdf"></i> Export PDF
-            </a>
-            <a href="<?= base_url('kepala-sekolah/laporan/guru-jam/export?format=excel&guru_id=' . (int) $filter_guru . '&mapel_id=' . (int) $filter_mapel) ?>"
-               class="btn btn-outline-success">
-                <i class="bi bi-file-excel"></i> Export Excel
-            </a>
-        </div>
-        <?php endif; ?>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Laporan Jam Mengajar Guru</h1>
+        <p class="s3-page-desc">
+            <?php if ($active_ta): ?>
+                Tahun ajaran: <?= esc($active_ta['nama']) ?>
+            <?php else: ?>
+                Tidak ada tahun ajaran aktif.
+            <?php endif; ?>
+        </p>
     </div>
+    <?php if ($active_ta && $has_jadwal && $rows !== []): ?>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kepala-sekolah/laporan/guru-jam/export?format=pdf&guru_id=' . (int) $filter_guru . '&mapel_id=' . (int) $filter_mapel) ?>"
+           class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-pdf"></i> Export PDF
+        </a>
+        <a href="<?= base_url('kepala-sekolah/laporan/guru-jam/export?format=excel&guru_id=' . (int) $filter_guru . '&mapel_id=' . (int) $filter_mapel) ?>"
+           class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-excel"></i> Export Excel
+        </a>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php if (! $active_ta): ?>
@@ -44,7 +42,7 @@
     <p class="text-muted mb-0">Laporan akan tersedia setelah jadwal di-generate oleh kurikulum.</p>
 </div>
 <?php else: ?>
-<div class="card border-0 shadow-sm mb-4">
+<div class="card mb-4">
     <div class="card-body">
         <form method="get" action="<?= base_url('kepala-sekolah/laporan/guru-jam') ?>" class="row g-3 align-items-end">
             <div class="col-md-4">
@@ -78,7 +76,7 @@
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body">
         <?php if ($rows === []): ?>
             <div class="text-center text-muted py-5">

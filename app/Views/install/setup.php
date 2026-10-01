@@ -31,7 +31,7 @@
     </div>
 
     <p class="small text-muted mt-4 mb-0">
-        Instalasi menyiapkan hari &amp; jam pelajaran dasar saja. Data guru, kelas, mapel, dan ruangan diisi setelah login.
+        Instalasi menyiapkan daftar hari (Senin–Sabtu) saja. Timeslot/jam pelajaran, guru, kelas, mapel, dan ruangan diisi setelah login lewat aplikasi.
     </p>
 
     <div class="d-flex justify-content-between mt-4">

@@ -1,69 +1,63 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="row g-3 mb-4">
-    <div class="col-12">
-        <div class="d-flex flex-wrap gap-2">
-            <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-primary btn-sm"><i class="bi bi-cpu"></i> Generate Jadwal</a>
-            <a href="<?= base_url('kurikulum/schedule/result') ?>" class="btn btn-outline-primary btn-sm"><i class="bi bi-calendar-week"></i> Lihat Jadwal</a>
-            <a href="<?= base_url('kurikulum/users') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people"></i> User</a>
-            <a href="<?= base_url('kurikulum/guru') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-badge"></i> Guru</a>
-            <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-building"></i> Rombel</a>
-            <a href="<?= base_url('kurikulum/timeslot') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clock"></i> Timeslot</a>
-        </div>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Dashboard Kurikulum</h1>
+        <p class="s3-page-desc">Ringkasan master data dan status penjadwalan sekolah.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-primary btn-sm"><i class="bi bi-cpu me-1"></i> Generate Jadwal</a>
+        <a href="<?= base_url('kurikulum/schedule/result') ?>" class="btn btn-outline-primary btn-sm"><i class="bi bi-calendar-week me-1"></i> Lihat Jadwal</a>
+        <a href="<?= base_url('kurikulum/users') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people me-1"></i> User</a>
+        <a href="<?= base_url('kurikulum/guru') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-badge me-1"></i> Guru</a>
+        <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-building me-1"></i> Rombel</a>
+        <a href="<?= base_url('kurikulum/timeslot') ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-clock me-1"></i> Timeslot</a>
     </div>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-12 col-md-3">
-        <div class="card bg-primary text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50">Total User</h6>
-                        <h2 class="mb-0 fw-bold"><?= $total_users ?></h2>
-                    </div>
-                    <div class="fs-1 text-white-50"><i class="bi bi-people"></i></div>
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="s3-kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="s3-kpi-label">Total User</div>
+                    <div class="s3-kpi-value"><?= esc($total_users) ?></div>
                 </div>
+                <span class="s3-kpi-icon"><i class="bi bi-people"></i></span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-3">
-        <div class="card bg-success text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50">Profil Guru</h6>
-                        <h2 class="mb-0 fw-bold"><?= $total_guru ?></h2>
-                    </div>
-                    <div class="fs-1 text-white-50"><i class="bi bi-person-badge"></i></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="s3-kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="s3-kpi-label">Profil Guru</div>
+                    <div class="s3-kpi-value"><?= esc($total_guru) ?></div>
                 </div>
+                <span class="s3-kpi-icon"><i class="bi bi-person-badge"></i></span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-3">
-        <div class="card bg-warning text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50">Total Rombel</h6>
-                        <h2 class="mb-0 fw-bold"><?= $total_kelas ?></h2>
-                    </div>
-                    <div class="fs-1 text-white-50"><i class="bi bi-building"></i></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="s3-kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="s3-kpi-label">Total Rombel</div>
+                    <div class="s3-kpi-value"><?= esc($total_kelas) ?></div>
                 </div>
+                <span class="s3-kpi-icon"><i class="bi bi-building"></i></span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-3">
-        <div class="card bg-info text-white h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-white-50">Total Mata Pelajaran</h6>
-                        <h2 class="mb-0 fw-bold"><?= $total_mapel ?></h2>
-                    </div>
-                    <div class="fs-1 text-white-50"><i class="bi bi-book"></i></div>
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="s3-kpi">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="s3-kpi-label">Mata Pelajaran</div>
+                    <div class="s3-kpi-value"><?= esc($total_mapel) ?></div>
                 </div>
+                <span class="s3-kpi-icon"><i class="bi bi-book"></i></span>
             </div>
         </div>
     </div>
@@ -73,7 +67,7 @@
     <div class="col-12 col-lg-8">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-4">Statistik Penjadwalan</h5>
+                <h5 class="fw-bold mb-4" style="letter-spacing:-0.02em;">Statistik Penjadwalan</h5>
                 <canvas id="scheduleChart" height="100"></canvas>
             </div>
         </div>
@@ -82,9 +76,12 @@
     <div class="col-12 col-lg-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-4">Aktivitas Generator Terakhir</h5>
+                <h5 class="fw-bold mb-4" style="letter-spacing:-0.02em;">Aktivitas Generator</h5>
                 <?php if (empty($logs)): ?>
-                    <p class="text-muted text-center my-5">Belum ada aktivitas penjadwalan.</p>
+                    <div class="s3-empty">
+                        <i class="bi bi-activity"></i>
+                        Belum ada aktivitas penjadwalan.
+                    </div>
                 <?php else: ?>
                     <div class="list-group list-group-flush border-0">
                         <?php foreach ($logs as $log): ?>
@@ -94,13 +91,13 @@
                                         <?php if ($log->status === 'completed'): ?>
                                             <span class="badge bg-success">Berhasil</span>
                                         <?php elseif ($log->status === 'partial'): ?>
-                                            <span class="badge bg-warning text-dark">Partial</span>
+                                            <span class="badge bg-warning">Partial</span>
                                         <?php elseif ($log->status === 'failed'): ?>
                                             <span class="badge bg-danger">Gagal</span>
                                         <?php elseif ($log->status === 'running'): ?>
                                             <span class="badge bg-secondary">Proses</span>
                                         <?php else: ?>
-                                            <span class="badge bg-warning text-dark"><?= esc(ucfirst((string) $log->status)) ?></span>
+                                            <span class="badge bg-warning"><?= esc(ucfirst((string) $log->status)) ?></span>
                                         <?php endif; ?>
                                     </h6>
                                     <small class="text-muted"><?php
@@ -124,7 +121,7 @@
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-3">Status Jadwal Aktif</h5>
+                <h5 class="fw-bold mb-3" style="letter-spacing:-0.02em;">Status Jadwal Aktif</h5>
                 <p class="mb-1"><strong>Tahun Ajaran:</strong> <?= esc($active_ta['nama'] ?? '-') ?></p>
                 <p class="mb-1"><strong>Semester:</strong> <?= esc(isset($active_ta['semester']) ? ucfirst($active_ta['semester']) : '-') ?></p>
                 <p class="mb-2">
@@ -132,10 +129,10 @@
                     <?php if ($has_jadwal ?? false): ?>
                         <span class="badge bg-success">Sudah Generate</span>
                     <?php else: ?>
-                        <span class="badge bg-warning text-dark">Belum Generate</span>
+                        <span class="badge bg-warning">Belum Generate</span>
                     <?php endif; ?>
                 </p>
-                <p class="mb-2"><strong>Fitness Terakhir:</strong> <?= esc($latest_log->fitness_score ?? '-') ?></p>
+                <p class="mb-3"><strong>Fitness Terakhir:</strong> <?= esc($latest_log->fitness_score ?? '-') ?></p>
                 <a href="<?= base_url('kurikulum/schedule/result') ?>" class="btn btn-primary btn-sm">Lihat Jadwal</a>
             </div>
         </div>
@@ -143,7 +140,7 @@
     <div class="col-12 col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-4">Distribusi Rombel per Jurusan</h5>
+                <h5 class="fw-bold mb-4" style="letter-spacing:-0.02em;">Distribusi Rombel per Jurusan</h5>
                 <canvas id="jurusanChart" height="100"></canvas>
             </div>
         </div>
@@ -155,9 +152,9 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-3"><i class="bi bi-calendar-day"></i> Jadwal Mengajar Hari Ini</h5>
+                <h5 class="fw-bold mb-3"><i class="bi bi-calendar-day me-1"></i> Jadwal Mengajar Hari Ini</h5>
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped mb-0">
+                    <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
                                 <th>Jam</th>
@@ -187,8 +184,19 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="<?= base_url('vendor/chartjs/chart.umd.min.js') ?>"></script>
 <script>
+    const isDarkMode = document.body.classList.contains('dark-mode')
+        || document.documentElement.classList.contains('dark-mode');
+    const chartTick = isDarkMode ? '#A9B8C9' : '#5B6B7C';
+    const chartGrid = isDarkMode ? 'rgba(232,238,245,0.12)' : 'rgba(11,31,58,0.06)';
+    const chartBar = isDarkMode ? '#E85D4C' : '#0B1F3A';
+    const chartBarHover = isDarkMode ? '#F5B5AD' : '#E85D4C';
+    const chartLegend = isDarkMode ? '#E8EEF5' : '#142033';
+    const chartSlices = isDarkMode
+        ? ['#E85D4C', '#F5B5AD', '#5B8FB8', '#A9B8C9', '#C48A2A']
+        : ['#0B1F3A', '#E85D4C', '#163457', '#5B6B7C', '#C48A2A'];
+
     const ctx = document.getElementById('scheduleChart');
     if (ctx) {
         new Chart(ctx, {
@@ -198,11 +206,27 @@
                 datasets: [{
                     label: 'Jumlah Slot Terjadwal',
                     data: <?= json_encode($jadwal_per_hari ?? [0,0,0,0,0]) ?>,
-                    backgroundColor: '#4F46E5',
-                    borderRadius: 4
+                    backgroundColor: chartBar,
+                    hoverBackgroundColor: chartBarHover,
+                    borderRadius: 6,
+                    maxBarThickness: 36
                 }]
             },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: chartGrid },
+                        ticks: { color: chartTick }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: chartTick }
+                    }
+                }
+            }
         });
     }
 
@@ -214,10 +238,20 @@
                 labels: <?= json_encode($kelas_per_jurusan_labels ?? []) ?>,
                 datasets: [{
                     data: <?= json_encode($kelas_per_jurusan_data ?? []) ?>,
-                    backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444']
+                    backgroundColor: chartSlices,
+                    borderWidth: 0
                 }]
             },
-            options: { responsive: true }
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 11 }, color: chartLegend }
+                    }
+                },
+                cutout: '62%'
+            }
         });
     }
 </script>

@@ -99,7 +99,7 @@ app/Views/components/      → Shared partials (timetable.php)
 `users`, `guru`, `guru_mapel`, `guru_hari_blokir`, `guru_preferensi`, `tahun_ajaran`, `jurusan`, `ruangan`, `kelas`, `kelas_mapel`, `mapel`, `timeslot`, `hari`, `jadwal`, `schedule_config`, `schedule_logs`
 
 ### Critical Constraints
-- Master data tables use **soft delete** (`deleted_at`) — EXCEPT `timeslot` and `hari`
+- Master data tables use **soft delete** (`deleted_at`) — EXCEPT `timeslot`, `hari`, junction tables (`guru_mapel`, `kelas_mapel`, `guru_hari_blokir`, `guru_preferensi`), and transactional/config tables (`jadwal`, `schedule_config`, `schedule_logs`, `schedule_jobs`, `settings`, `app_settings`)
 - Auth via `users` table; `guru` is optional teaching profile linked by `user_id`
 - `kelas_mapel` defines weekly JP demand per class (replaces `pengajaran`)
 - `guru_mapel` defines teacher capacity per subject (HC-6)

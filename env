@@ -11,6 +11,16 @@ CI_ENVIRONMENT = production
 app.baseURL = 'http://localhost:8080/'
 encryption.key =
 
+# After /install succeeds this is set to false (blocks re-running the wizard
+# even if writable/installed.lock is deleted). Set to true only for recovery.
+installer.enabled = true
+
+# Enable both when serving over HTTPS in production:
+# app.forceGlobalSecureRequests = true
+# cookie.secure = true
+app.forceGlobalSecureRequests = false
+cookie.secure = false
+
 #--------------------------------------------------------------------
 # DATABASE
 #--------------------------------------------------------------------

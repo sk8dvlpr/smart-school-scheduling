@@ -1,9 +1,7 @@
-<div class="card shadow-sm border-0 mt-4">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold"><i class="bi bi-book me-2"></i>Panduan Parameter Algoritma</h5>
-        <p class="small text-muted mb-0 mt-1">Keterangan fungsi setiap parameter dan dampak jika nilainya dinaikkan atau diturunkan.</p>
-    </div>
-    <div class="card-body p-0">
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="fw-bold mb-1"><i class="bi bi-book me-2"></i>Panduan Parameter Algoritma</h5>
+        <p class="small text-muted mb-3">Keterangan fungsi setiap parameter dan dampak jika nilainya dinaikkan atau diturunkan.</p>
         <div class="accordion accordion-flush" id="paramGuideAccordion">
 
             <div class="accordion-item">

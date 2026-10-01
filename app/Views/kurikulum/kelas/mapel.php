@@ -1,21 +1,23 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="mb-3">
-    <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
-</div>
-
-<div class="card">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold">Kurikulum Rombel — <?= esc($kelas['nama']) ?></h5>
-        <small class="text-muted">
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Kurikulum Rombel — <?= esc($kelas['nama']) ?></h1>
+        <p class="s3-page-desc">
             <?= esc($kelas['nama_jurusan']) ?> | <?= esc($kelas['ta_nama']) ?> |
             Total JP: <strong class="<?= $total_jp === 48 ? 'text-success' : 'text-warning' ?>"><?= $total_jp ?> / 48</strong>
             <?php if ($total_jp !== 48): ?>
                 <span class="badge bg-warning text-dark ms-1">Target 48 JP/minggu</span>
             <?php endif; ?>
-        </small>
+        </p>
     </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kurikulum/kelas') ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+    </div>
+</div>
+
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -66,14 +68,14 @@
             <?= csrf_field() ?>
             <div id="bulkDeleteInputs"></div>
         </form>
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <h6 class="mb-0">Daftar Mapel</h6>
             <button type="button" class="btn btn-danger btn-sm" id="btnBulkDelete" disabled onclick="submitBulkDelete()">
                 <i class="bi bi-trash"></i> Hapus Terpilih
             </button>
         </div>
         <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-hover align-middle">
                 <thead>
                     <tr>
                         <th width="5%"><input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll(this)"></th>

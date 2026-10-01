@@ -8,10 +8,12 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 /**
  * Simple file-cache login throttle (shared-hosting friendly, no Redis).
+ * Limits per IP+email (tight) and per IP overall (wider spray protection).
  */
 class LoginThrottleFilter implements FilterInterface
 {
     private const MAX_ATTEMPTS = 5;
+    private const MAX_ATTEMPTS_IP = 30;
     private const WINDOW_SECONDS = 900; // 15 minutes
 
     public function before(RequestInterface $request, $arguments = null)
@@ -22,18 +24,10 @@ class LoginThrottleFilter implements FilterInterface
 
         $email = strtolower(trim((string) $request->getPost('email')));
         $ip    = $request->getIPAddress() ?: 'unknown';
-        $key   = 'login_throttle_' . md5($ip . '|' . $email);
 
-        $cache = cache();
-        $data  = $cache->get($key);
-        if (! is_array($data)) {
-            return null;
-        }
-
-        $attempts = (int) ($data['attempts'] ?? 0);
-        $until    = (int) ($data['locked_until'] ?? 0);
-
-        if ($until > time() || $attempts >= self::MAX_ATTEMPTS) {
+        if ($this->isLocked($this->pairKey($ip, $email), self::MAX_ATTEMPTS)
+            || $this->isLocked($this->ipKey($ip), self::MAX_ATTEMPTS_IP)
+        ) {
             return redirect()->back()->with(
                 'error',
                 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.',
@@ -51,7 +45,36 @@ class LoginThrottleFilter implements FilterInterface
     public static function recordFailure(string $ip, string $email): void
     {
         $email = strtolower(trim($email));
-        $key   = 'login_throttle_' . md5(($ip ?: 'unknown') . '|' . $email);
+        $ip    = $ip ?: 'unknown';
+
+        self::bump(self::pairKey($ip, $email), self::MAX_ATTEMPTS);
+        self::bump(self::ipKey($ip), self::MAX_ATTEMPTS_IP);
+    }
+
+    public static function clear(string $ip, string $email): void
+    {
+        $email = strtolower(trim($email));
+        $ip    = $ip ?: 'unknown';
+        $cache = cache();
+        $cache->delete(self::pairKey($ip, $email));
+        // Do not clear IP bucket on success — still protects spray against other emails.
+    }
+
+    private function isLocked(string $key, int $maxAttempts): bool
+    {
+        $data = cache()->get($key);
+        if (! is_array($data)) {
+            return false;
+        }
+
+        $attempts = (int) ($data['attempts'] ?? 0);
+        $until    = (int) ($data['locked_until'] ?? 0);
+
+        return $until > time() || $attempts >= $maxAttempts;
+    }
+
+    private static function bump(string $key, int $maxAttempts): void
+    {
         $cache = cache();
         $data  = $cache->get($key);
         if (! is_array($data)) {
@@ -59,17 +82,20 @@ class LoginThrottleFilter implements FilterInterface
         }
 
         $data['attempts'] = (int) $data['attempts'] + 1;
-        if ($data['attempts'] >= self::MAX_ATTEMPTS) {
+        if ($data['attempts'] >= $maxAttempts) {
             $data['locked_until'] = time() + self::WINDOW_SECONDS;
         }
 
         $cache->save($key, $data, self::WINDOW_SECONDS);
     }
 
-    public static function clear(string $ip, string $email): void
+    private static function pairKey(string $ip, string $email): string
     {
-        $email = strtolower(trim($email));
-        $key   = 'login_throttle_' . md5(($ip ?: 'unknown') . '|' . $email);
-        cache()->delete($key);
+        return 'login_throttle_' . md5($ip . '|' . $email);
+    }
+
+    private static function ipKey(string $ip): string
+    {
+        return 'login_throttle_ip_' . md5($ip);
     }
 }

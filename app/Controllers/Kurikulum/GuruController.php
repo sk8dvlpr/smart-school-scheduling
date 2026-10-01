@@ -189,6 +189,14 @@ class GuruController extends BaseController
                 $role = 'guru';
             }
 
+            // Non-admin kurikulum cannot provision kurikulum accounts via CSV.
+            if ($role === 'kurikulum' && ! UserModel::sessionIsKurikulumAdmin()) {
+                $failed++;
+                $errors[] = "Baris $line: role kurikulum hanya boleh diimport oleh kurikulum admin.";
+
+                continue;
+            }
+
             try {
                 $this->provisioning->upsertByEmail([
                     'email'   => $data['email'] ?? '',

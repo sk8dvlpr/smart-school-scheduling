@@ -1,30 +1,28 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="fw-bold mb-0">Hasil Penjadwalan</h4>
-            <p class="text-muted mb-0">Jadwal untuk tahun ajaran aktif.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <?php
-                $exportAllSuffix = !empty($schedule_log_id) ? '?schedule_log_id=' . (int) $schedule_log_id : '';
-            ?>
-            <a href="<?= base_url('kurikulum/schedule/export/pdf-all' . $exportAllSuffix) ?>" class="btn btn-outline-danger" target="_blank">
-                <i class="bi bi-file-pdf"></i> Export Semua Rombel (PDF)
-            </a>
-            <a href="<?= base_url('kurikulum/schedule/export/excel-all' . $exportAllSuffix) ?>" class="btn btn-outline-success">
-                <i class="bi bi-file-excel"></i> Export Semua Rombel (Excel)
-            </a>
-            <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Kembali
-            </a>
-        </div>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Hasil Penjadwalan</h1>
+        <p class="s3-page-desc">Jadwal untuk tahun ajaran aktif.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <?php
+            $exportAllSuffix = !empty($schedule_log_id) ? '?schedule_log_id=' . (int) $schedule_log_id : '';
+        ?>
+        <a href="<?= base_url('kurikulum/schedule/export/pdf-all' . $exportAllSuffix) ?>" class="btn btn-outline-danger btn-sm" target="_blank">
+            <i class="bi bi-file-pdf"></i> Export Semua Rombel (PDF)
+        </a>
+        <a href="<?= base_url('kurikulum/schedule/export/excel-all' . $exportAllSuffix) ?>" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-file-excel"></i> Export Semua Rombel (Excel)
+        </a>
+        <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Kembali
+        </a>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body">
         <ul class="nav nav-tabs mb-4" id="jadwalTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -51,8 +49,8 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end justify-content-end">
-                        <button class="btn btn-danger me-2" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                    <div class="col-md-6 d-flex flex-wrap align-items-end justify-content-end gap-2">
+                        <button class="btn btn-danger" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
                         <button class="btn btn-success" onclick="exportData('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
                     </div>
                 </div>
@@ -82,8 +80,8 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end justify-content-end">
-                        <button class="btn btn-danger me-2" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                    <div class="col-md-6 d-flex flex-wrap align-items-end justify-content-end gap-2">
+                        <button class="btn btn-danger" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
                         <button class="btn btn-success" onclick="exportData('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
                     </div>
                 </div>
@@ -107,8 +105,8 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-6 d-flex align-items-end justify-content-end">
-                        <button class="btn btn-danger me-2" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
+                    <div class="col-md-6 d-flex flex-wrap align-items-end justify-content-end gap-2">
+                        <button class="btn btn-danger" onclick="exportData('pdf')"><i class="bi bi-file-pdf"></i> Export PDF</button>
                         <button class="btn btn-success" onclick="exportData('excel')"><i class="bi bi-file-excel"></i> Export Excel</button>
                     </div>
                 </div>

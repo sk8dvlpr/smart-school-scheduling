@@ -110,6 +110,11 @@ class AuthController extends BaseController
             return redirect()->to('/auth/login');
         }
 
+        // POST must only run during forced password change (GET form already gates this).
+        if (! session()->get('must_change_password')) {
+            return $this->redirectByRole(session()->get('role'));
+        }
+
         if (! $this->validate([
             'password_baru'      => 'required|min_length[8]',
             'password_konfirmasi'=> 'required|matches[password_baru]',

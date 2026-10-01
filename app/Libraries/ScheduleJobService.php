@@ -278,13 +278,23 @@ class ScheduleJobService
 
         $this->updateProgress($jobId, 10, null, null);
 
-        $generator = new ScheduleGenerator();
-        $result    = $generator->generate(
-            (int) $job['tahun_ajaran_id'],
-            (int) $job['user_id'],
-            $job['parent_log_id'] !== null ? (int) $job['parent_log_id'] : null,
-            (string) ($job['generate_mode'] ?? 'fresh')
-        );
+        try {
+            $generator = $this->createGenerator();
+            $result    = $generator->generate(
+                (int) $job['tahun_ajaran_id'],
+                (int) $job['user_id'],
+                $job['parent_log_id'] !== null ? (int) $job['parent_log_id'] : null,
+                (string) ($job['generate_mode'] ?? 'fresh')
+            );
+        } catch (\Throwable $e) {
+            log_message('error', 'Schedule job {id} exception: {msg}', [
+                'id'  => $jobId,
+                'msg' => $e->getMessage(),
+            ]);
+            $this->fail($jobId, 'Generate gagal: ' . $e->getMessage());
+
+            return;
+        }
 
         if ($this->isCancelRequested($jobId)) {
             $this->markCancelled($jobId, 'Dibatalkan setelah eksekusi dimulai.');
@@ -313,6 +323,18 @@ class ScheduleJobService
         }
 
         $message = (string) ($result['message'] ?? $result['summary'] ?? 'Generate gagal.');
+        log_message('error', 'Schedule job {id} failed: {msg}', [
+            'id'  => $jobId,
+            'msg' => $message,
+        ]);
         $this->fail($jobId, $message);
+    }
+
+    /**
+     * Hook for tests to inject a failing / fake generator.
+     */
+    protected function createGenerator(): ScheduleGenerator
+    {
+        return new ScheduleGenerator();
     }
 }

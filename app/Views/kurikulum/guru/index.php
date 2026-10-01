@@ -5,18 +5,21 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold">Data Guru</h5>
-        <div>
-            <button type="button" class="btn btn-outline-secondary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#importModal">
-                <i class="bi bi-upload"></i> Import CSV
-            </button>
-            <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
-                <i class="bi bi-plus-lg"></i> Tambah Guru
-            </button>
-        </div>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Data Guru</h1>
+        <p class="s3-page-desc">Kelola profil guru, mapel yang diampu, dan preferensi jadwal.</p>
     </div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-upload"></i> Import CSV
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
+            <i class="bi bi-plus-lg"></i> Tambah Guru
+        </button>
+    </div>
+</div>
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -51,7 +54,7 @@
             </div>
         <?php endif; ?>
 
-        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
+        <table id="dataTable" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>

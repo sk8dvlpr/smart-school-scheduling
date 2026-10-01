@@ -12,22 +12,21 @@
     ?>
     <title>Login - <?= esc($branding['nama_sekolah']) ?></title>
     <link rel="icon" href="<?= esc($logoUrl) ?>" type="<?= $hasCustomLogo ? 'image/png' : 'image/svg+xml' ?>">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="<?= base_url('vendor/bootstrap/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('vendor/bootstrap-icons/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
     <style>
         :root {
-            --login-accent: #2563EB;
-            --login-accent-hover: #1D4ED8;
-            --login-text: #1F2937;
-            --login-muted: #6B7280;
-            --login-border: #E5E7EB;
+            --login-accent: #E85D4C;
+            --login-accent-hover: #D44A3A;
+            --login-navy: #0B1F3A;
+            --login-text: #142033;
+            --login-muted: #5B6B7C;
+            --login-border: #E4DFD8;
             --login-panel: #FFFFFF;
+            --login-surface: #F7F5F2;
         }
 
-        *, *::before, *::after {
-            box-sizing: border-box;
-        }
+        *, *::before, *::after { box-sizing: border-box; }
 
         html, body {
             height: 100%;
@@ -35,9 +34,10 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             color: var(--login-text);
             background: var(--login-panel);
+            -webkit-font-smoothing: antialiased;
         }
 
         .login-page {
@@ -46,13 +46,13 @@
         }
 
         .login-hero {
-            flex: 1 1 58%;
+            flex: 1 1 56%;
             position: relative;
-            background: #0F172A url('<?= esc($bgUrl) ?>') center center / cover no-repeat;
+            background: var(--login-navy) url('<?= esc($bgUrl) ?>') center center / cover no-repeat;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 2.5rem;
+            padding: 2.75rem;
         }
 
         .login-hero::before {
@@ -60,74 +60,103 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(
-                180deg,
-                rgba(15, 23, 42, 0.1) 0%,
-                rgba(15, 23, 42, 0.55) 100%
+                165deg,
+                rgba(11, 31, 58, 0.25) 0%,
+                rgba(11, 31, 58, 0.55) 45%,
+                rgba(11, 31, 58, 0.88) 100%
             );
+        }
+
+        .login-hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #E85D4C, transparent 70%);
+            z-index: 1;
         }
 
         .login-hero-content {
             position: relative;
             z-index: 1;
-            max-width: 32rem;
+            max-width: 28rem;
             color: #fff;
         }
 
+        .login-hero-eyebrow {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 650;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #F5B5AD;
+            margin-bottom: 0.75rem;
+        }
+
         .login-hero-content h2 {
-            font-size: 1.625rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 0.5rem;
-            line-height: 1.25;
+            font-family: 'Instrument Sans', 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.85rem;
+            font-weight: 650;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.65rem;
+            line-height: 1.2;
         }
 
         .login-hero-content p {
             margin: 0;
-            font-size: 0.9375rem;
+            font-size: 0.95rem;
             line-height: 1.6;
-            color: rgba(255, 255, 255, 0.88);
+            color: rgba(255, 255, 255, 0.82);
         }
 
         .login-panel {
-            flex: 0 0 42%;
+            flex: 0 0 44%;
             max-width: 520px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 2.5rem 2rem;
-            background: var(--login-panel);
+            background: var(--login-surface);
             border-left: 1px solid var(--login-border);
         }
 
         .login-panel-inner {
             width: 100%;
             max-width: 360px;
+            background: var(--login-panel);
+            border: 1px solid var(--login-border);
+            border-radius: 14px;
+            padding: 2rem 1.75rem;
+            box-shadow: 0 4px 24px rgba(11, 31, 58, 0.06);
         }
 
         .login-brand {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.75rem;
         }
 
         .login-logo {
-            width: 96px;
-            height: 96px;
+            width: 72px;
+            height: 72px;
             object-fit: contain;
-            margin-bottom: 1rem;
-            border-radius: <?= $hasCustomLogo ? '12px' : '22px' ?>;
+            margin-bottom: 0.85rem;
+            border-radius: <?= $hasCustomLogo ? '10px' : '16px' ?>;
         }
 
         .login-brand h1 {
-            font-size: 1.125rem;
-            font-weight: 700;
-            letter-spacing: -0.01em;
+            font-family: 'Instrument Sans', 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 650;
+            letter-spacing: -0.02em;
             margin: 0 0 0.25rem;
-            color: var(--login-text);
+            color: var(--login-navy);
             line-height: 1.35;
         }
 
         .login-brand .login-subtitle {
-            font-size: 0.8125rem;
+            font-size: 0.8rem;
             color: var(--login-muted);
             margin: 0;
             font-weight: 500;
@@ -152,7 +181,7 @@
 
         .login-input-group:focus-within {
             border-color: var(--login-accent);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            box-shadow: 0 0 0 3px rgba(232, 93, 76, 0.16);
         }
 
         .login-input-icon {
@@ -162,7 +191,7 @@
             width: 2.75rem;
             flex-shrink: 0;
             color: var(--login-muted);
-            background: #F9FAFB;
+            background: var(--login-surface);
             border-right: 1px solid var(--login-border);
             font-size: 1rem;
         }
@@ -181,9 +210,9 @@
 
         .btn-login {
             width: 100%;
-            padding: 0.6875rem 1rem;
+            padding: 0.7rem 1rem;
             font-size: 0.9375rem;
-            font-weight: 600;
+            font-weight: 650;
             color: #fff;
             background: var(--login-accent);
             border: 1px solid var(--login-accent);
@@ -205,7 +234,7 @@
         }
 
         .login-footer {
-            margin-top: 2rem;
+            margin-top: 1.75rem;
             text-align: center;
             font-size: 0.75rem;
             color: var(--login-muted);
@@ -214,12 +243,12 @@
         @media (max-width: 991.98px) {
             .login-page {
                 flex-direction: column;
-                background: #0F172A url('<?= esc($bgUrl) ?>') center center / cover no-repeat fixed;
+                background: var(--login-navy) url('<?= esc($bgUrl) ?>') center center / cover no-repeat fixed;
             }
 
             .login-hero {
                 flex: 0 0 auto;
-                min-height: 11rem;
+                min-height: 10.5rem;
                 padding: 1.5rem;
                 background: transparent;
             }
@@ -227,13 +256,13 @@
             .login-hero::before {
                 background: linear-gradient(
                     180deg,
-                    rgba(15, 23, 42, 0.25) 0%,
-                    rgba(15, 23, 42, 0.7) 100%
+                    rgba(11, 31, 58, 0.35) 0%,
+                    rgba(11, 31, 58, 0.82) 100%
                 );
             }
 
             .login-hero-content h2 {
-                font-size: 1.25rem;
+                font-size: 1.35rem;
             }
 
             .login-panel {
@@ -243,19 +272,24 @@
                 border-top-left-radius: 1.25rem;
                 border-top-right-radius: 1.25rem;
                 margin-top: auto;
-                padding: 2rem 1.5rem 2.5rem;
-                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+                padding: 1.5rem 1.25rem 2rem;
+                background: var(--login-surface);
+                box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+            }
+
+            .login-panel-inner {
+                max-width: none;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                background: transparent;
             }
         }
 
         @media (max-width: 575.98px) {
-            .login-panel {
-                padding: 1.75rem 1.25rem 2rem;
-            }
-
             .login-logo {
-                width: 80px;
-                height: 80px;
+                width: 64px;
+                height: 64px;
             }
         }
     </style>
@@ -265,6 +299,7 @@
 <div class="login-page">
     <section class="login-hero" aria-hidden="true">
         <div class="login-hero-content">
+            <span class="login-hero-eyebrow">Smart School Scheduling</span>
             <h2><?= esc($branding['nama_sekolah']) ?></h2>
             <p>Sistem penjadwalan mata pelajaran untuk mendukung operasional kurikulum sekolah.</p>
         </div>
@@ -275,7 +310,7 @@
             <div class="login-brand">
                 <img src="<?= esc($logoUrl) ?>" alt="<?= esc($hasCustomLogo ? 'Logo ' . $branding['nama_sekolah'] : 'Smart School Scheduling') ?>" class="login-logo">
                 <h1><?= esc($branding['nama_sekolah']) ?></h1>
-                <p class="login-subtitle">Smart School Scheduling</p>
+                <p class="login-subtitle">Masuk ke akun Anda</p>
             </div>
 
             <?php if (session()->getFlashdata('error')) : ?>
@@ -316,7 +351,7 @@
     </main>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?= base_url('vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 <script>
     document.getElementById('togglePassword').addEventListener('click', function () {
         const passwordInput = document.getElementById('password');

@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, mysqli, gd, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
+
+      - name: PHPUnit (dev deps for tests)
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          vendor/bin/phpunit --configuration phpunit.dist.xml --no-coverage
+
+      - name: Build release zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          bash scripts/build-release.sh "$VERSION"
+          echo "ASSET=build/smart-school-scheduling-${VERSION}.zip" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Smart School Scheduling ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          files: ${{ env.ASSET }}
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -15,4 +15,4 @@ Please report security issues privately (do not open a public issue with exploit
 - Role-based filters for Kurikulum, Guru, and Kepala Sekolah modules
 - Login throttling on `auth/login`
 
-After installation, remove public access to `/install` (enforced via `writable/installed.lock`).
+After installation, the wizard writes `writable/installed.lock` and sets `installer.enabled = false` in `.env` so `/install` stays closed even if the lock file is removed. Do not re-enable the installer on a live school database unless you intend a full reinstall.

@@ -153,7 +153,7 @@ Disarankan memakai **Laragon** atau **XAMPP** (sudah berisi Apache, MySQL, PHP).
    php spark migrate
    php spark db:seed
    ```
-   Seed hanya mengisi hari & timeslot dasar. Buat akun admin lewat wizard `/install` (disarankan) atau buat user kurikulum lewat database/UI setelah migrasi.
+   Seed hanya mengisi **daftar hari** (Senin–Sabtu). **Timeslot / jam pelajaran tidak di-seed** — tiap sekolah berbeda; isi lewat menu Kurikulum → Timeslot setelah login. Buat akun admin lewat wizard `/install` (disarankan) atau buat user kurikulum lewat database/UI setelah migrasi.
 8. **Buka browser** ke alamat `baseURL` yang Anda atur (contoh: `http://smart-school-scheduling.test` jika pakai Laragon).
 
 ### Opsi B — Linux (Ubuntu/Debian)
@@ -215,9 +215,19 @@ php spark serve
 Buka browser: `http://localhost:8080`
 
 ### Mode produksi (server sekolah)
-- Arahkan web server ke folder **`public`** (bukan folder utama proyek).
-- Pastikan MySQL berjalan.
-- Folder `writable` harus bisa ditulis oleh web server (izin folder).
+- Arahkan web server (Apache/Nginx) ke folder **`public`** (bukan folder utama proyek).
+- Pasang dependensi production: `composer install --no-dev --optimize-autoloader`.
+- Pastikan MySQL berjalan; folder `writable/` dan `public/uploads/` bisa ditulis web server.
+- **HTTPS:** set `app.baseURL` ke `https://…`. Wizard instalasi akan mengaktifkan `app.forceGlobalSecureRequests` dan `cookie.secure` otomatis jika base URL HTTPS. Untuk install manual, set keduanya `true` di `.env`.
+- **Worker generate jadwal (wajib di production):** jalankan proses terpisah agar CSP+GA tidak bergantung pada satu request HTTP (yang mudah timeout di shared hosting):
+  ```bash
+  php spark schedule:worker
+  ```
+  Jalankan via systemd, Supervisor, atau Task Scheduler agar selalu hidup. Tombol/tick HTTP di UI hanya fallback darurat.
+- Batalkan generate mid-run: permintaan cancel dicek **sebelum** dan **setelah** eksekusi solver (bukan di tengah loop CSP/GA).
+- PHP: naikkan `memory_limit` (mis. 512M) dan `max_execution_time` untuk proses worker.
+- Backup rutin: database MySQL + isi `public/uploads/` (logo branding).
+- Jangan hapus `writable/installed.lock` atau set `installer.enabled = true` kecuali recovery yang disengaja.
 
 ### Login pertama kali
 
@@ -225,16 +235,17 @@ Buka browser: `http://localhost:8080`
 
 > Segera ganti password setelah login pertama di lingkungan produksi.
 
-**Pengembangan:** jika database sudah ada sebelum fitur installer, buat `writable/installed.lock` (file kosong atau JSON) agar aplikasi tidak redirect ke `/install`.
+**Pengembangan:** jika database sudah ada sebelum fitur installer, buat `writable/installed.lock` (file kosong atau JSON) **dan** set `installer.enabled = false` di `.env` agar aplikasi tidak redirect ke `/install`.
 
 ### Alur kerja singkat (Kurikulum)
 
 1. Login sebagai Kurikulum.
-2. Pastikan data master lengkap (tahun ajaran aktif, guru, kelas, mapel, jam sekolah).
-3. Menu **Jadwal** → **Generate** untuk membuat jadwal otomatis.
-4. **Publish** jadwal dari halaman log/history agar Guru & Kepala Sekolah dapat melihat hasil.
-5. Periksa hasil per kelas/guru; edit manual (tambah/hapus/swap) jika perlu.
-6. Ekspor PDF/Excel untuk dibagikan.
+2. **Buat Timeslot** (jam JP per hari) — wajib sebelum generate.
+3. Pastikan data master lengkap (tahun ajaran aktif, guru, kelas, mapel, ruangan).
+4. Menu **Jadwal** → **Generate** untuk membuat jadwal otomatis (pastikan worker jalan di production).
+5. **Publish** jadwal dari halaman log/history agar Guru & Kepala Sekolah dapat melihat hasil.
+6. Periksa hasil per kelas/guru; edit manual (tambah/hapus/swap) jika perlu.
+7. Ekspor PDF/Excel untuk dibagikan.
 
 ---
 
@@ -256,8 +267,9 @@ Buka browser: `http://localhost:8080`
 | Halaman putih / error 500 | Cek `writable/logs/`, pastikan ekstensi PHP lengkap |
 | Tidak bisa konek database | Periksa username/password di `.env`, pastikan MySQL jalan |
 | CSS/JS tidak muncul | Periksa `app.baseURL` di `.env` sesuai alamat browser |
-| Generate jadwal lama | Normal untuk banyak kelas; naikkan RAM atau kurangi parameter populasi di config jadwal |
-| `migrate` gagal | Pastikan database kosong sudah dibuat, user MySQL punya hak CREATE TABLE |
+| Generate jadwal lama / timeout | Jalankan `php spark schedule:worker`; naikkan RAM/`memory_limit`; kurangi populasi GA di config |
+| Generate gagal “tidak ada slot” | Pastikan Timeslot tipe `jp` sudah dibuat per hari aktif |
+| `migrate` gagal | Pastikan database kosong sudah dibuat, user MySQL punya hak CREATE TABLE. **Breaking:** skema sekarang baseline tunggal — DB lama dari migrasi bertahap harus di-reinstall |
 
 ---
 

@@ -45,9 +45,16 @@ class ScheduleController extends BaseController
         $activeTa = $this->taModel->where('is_active', 1)->first();
         if (! $activeTa) {
             return view('kurikulum/schedule/index', [
-                'title'     => 'Generator Jadwal',
-                'error'     => 'Tidak ada Tahun Ajaran aktif.',
-                'active_ta' => null,
+                'title'         => 'Generator Jadwal',
+                'error'         => 'Tidak ada Tahun Ajaran aktif.',
+                'active_ta'     => null,
+                'validation'    => [],
+                'is_valid'      => false,
+                'config'        => [],
+                'latest_log'    => null,
+                'has_jadwal'    => false,
+                'history_logs'  => [],
+                'published_log' => null,
             ]);
         }
 
@@ -59,9 +66,22 @@ class ScheduleController extends BaseController
             $configMap[$c['param_key']] = $c['param_value'];
         }
 
-        $generator = new ScheduleGenerator();
-        $validationResults = $generator->validate($activeTa['id']);
-        $isValid = count(array_filter($validationResults, fn ($v) => ! $v['status'])) === 0;
+        $validationResults = [];
+        $validationError = null;
+        try {
+            $generator = new ScheduleGenerator();
+            $validationResults = $generator->validate($activeTa['id']);
+        } catch (\Throwable $e) {
+            log_message('error', 'Schedule pre-validation failed: {message}', ['message' => $e->getMessage()]);
+            $validationError = 'Pra-validasi gagal dijalankan. Pastikan master data (Tahun Ajaran, Timeslot, Rombel, dll.) sudah diisi dengan benar.';
+            $validationResults = [[
+                'rule'    => 'Kesiapan Sistem',
+                'status'  => false,
+                'message' => $validationError,
+            ]];
+        }
+        $isValid = $validationResults !== []
+            && count(array_filter($validationResults, static fn ($v) => ! $v['status'])) === 0;
 
         $latestLog = $this->logModel->where('tahun_ajaran_id', $activeTa['id'])
             ->orderBy('id', 'DESC')
@@ -73,15 +93,16 @@ class ScheduleController extends BaseController
             ->findAll(10);
 
         return view('kurikulum/schedule/index', [
-            'title'         => 'Generator Jadwal',
-            'active_ta'     => $activeTa,
-            'config'        => $configMap,
-            'validation'    => $validationResults,
-            'is_valid'      => $isValid,
-            'latest_log'    => $latestLog,
-            'has_jadwal'    => $hasJadwal,
-            'history_logs'  => $historyLogs,
-            'published_log' => (new ScheduleHistoryService())->getPublishedLog((int) $activeTa['id']),
+            'title'            => 'Generator Jadwal',
+            'active_ta'        => $activeTa,
+            'config'           => $configMap,
+            'validation'       => $validationResults,
+            'is_valid'         => $isValid,
+            'validation_error' => $validationError,
+            'latest_log'       => $latestLog,
+            'has_jadwal'       => $hasJadwal,
+            'history_logs'     => $historyLogs,
+            'published_log'    => (new ScheduleHistoryService())->getPublishedLog((int) $activeTa['id']),
         ]);
     }
 

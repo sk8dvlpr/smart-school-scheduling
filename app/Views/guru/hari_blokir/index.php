@@ -1,11 +1,13 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold">Hari Tidak Mengajar</h5>
-        <small class="text-muted">Centang hari yang tidak tersedia mengajar (HC-4). Kosong = tersedia semua hari. Data ini hanya milik Anda.</small>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Hari Tidak Mengajar</h1>
+        <p class="s3-page-desc">Centang hari yang tidak tersedia mengajar (HC-4). Kosong = tersedia semua hari. Data ini hanya milik Anda.</p>
     </div>
+</div>
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>

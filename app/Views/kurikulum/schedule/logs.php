@@ -5,21 +5,21 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h4 class="fw-bold mb-0">Riwayat Generate Jadwal</h4>
-            <p class="text-muted mb-0">Log hasil eksekusi algoritma penjadwalan</p>
-        </div>
-        <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary">
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Riwayat Generate Jadwal</h1>
+        <p class="s3-page-desc">Log hasil eksekusi algoritma penjadwalan.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Kembali
         </a>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
+<div class="card">
     <div class="card-body">
-        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
+        <table id="dataTable" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th>Waktu Eksekusi</th>

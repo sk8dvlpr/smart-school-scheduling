@@ -1,5 +1,5 @@
 <div class="mb-3">
-    <h5 class="fw-bold mb-0">Jadwal Guru: <?= esc($guru['nama'] ?? '-') ?></h5>
+    <h5 class="fw-bold mb-0" style="font-family:var(--font-display);letter-spacing:-0.02em;">Jadwal Guru: <?= esc($guru['nama'] ?? '-') ?></h5>
     <span class="badge bg-primary mt-1">Total Mengajar: <?= $total_jp ?> JP/minggu</span>
 </div>
 

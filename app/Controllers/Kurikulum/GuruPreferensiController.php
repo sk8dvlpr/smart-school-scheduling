@@ -3,6 +3,7 @@
 namespace App\Controllers\Kurikulum;
 
 use App\Controllers\BaseController;
+use App\Libraries\HariIdValidator;
 use App\Models\GuruModel;
 use App\Models\GuruPreferensiModel;
 use App\Models\HariModel;
@@ -55,7 +56,8 @@ class GuruPreferensiController extends BaseController
         }
 
         $dayPost = $this->request->getPost('day');
-        $rows    = $this->prefModel->fromFormPost(is_array($dayPost) ? $dayPost : []);
+        $dayPost = HariIdValidator::filterDayPost(is_array($dayPost) ? $dayPost : []);
+        $rows    = $this->prefModel->fromFormPost($dayPost);
         $this->prefModel->replaceForGuru($guruId, $rows);
 
         return redirect()->to("/kurikulum/guru/{$guruId}/preferensi")

@@ -1,6 +1,6 @@
 <div class="mb-3">
-    <h5 class="fw-bold mb-1">Jadwal Ruangan: <?= esc($ruangan['nama']) ?> (<?= esc($ruangan['kode']) ?>)</h5>
-    <div class="d-flex align-items-center gap-2">
+    <h5 class="fw-bold mb-1" style="font-family:var(--font-display);letter-spacing:-0.02em;">Jadwal Ruangan: <?= esc($ruangan['nama']) ?> (<?= esc($ruangan['kode']) ?>)</h5>
+    <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="badge <?= $ruangan['tipe'] == 'lab' ? 'bg-warning text-dark' : 'bg-info' ?>">
             <?= ucfirst($ruangan['tipe']) ?>
         </span>

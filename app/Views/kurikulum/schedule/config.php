@@ -1,21 +1,21 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-12 d-flex align-items-center">
-        <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary me-3">
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Konfigurasi Algoritma Penjadwalan</h1>
+        <p class="s3-page-desc">Parameter CSP + GA dan bobot soft constraint (v3.0).</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kurikulum/schedule') ?>" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left"></i> Kembali
         </a>
-        <div>
-            <h4 class="fw-bold mb-0">Konfigurasi Algoritma Penjadwalan</h4>
-            <p class="text-muted mb-0">Parameter CSP + GA dan bobot soft constraint (v3.0)</p>
-        </div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-10 mx-auto">
-        <div class="card shadow-sm border-0">
+    <div class="col-md-10">
+        <div class="card">
             <div class="card-body p-4">
                 <?php if (session()->getFlashdata('success')): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">

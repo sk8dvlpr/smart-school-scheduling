@@ -5,13 +5,18 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold">Data User</h5>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Data User</h1>
+        <p class="s3-page-desc">Kelola akun staff non-mengajar (Kurikulum dan Kepala Sekolah).</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
         <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
             <i class="bi bi-plus-lg"></i> Tambah User
         </button>
     </div>
+</div>
+<div class="card">
     <div class="card-body">
         <div class="alert alert-info py-2 mb-3">
             <small><i class="bi bi-info-circle me-1"></i> Untuk <strong>guru yang mengajar</strong>, gunakan <a href="<?= base_url('kurikulum/guru') ?>">Manajemen Guru</a>. Modul ini untuk staff non-mengajar (Kepala Sekolah, Kurikulum tanpa mengajar).</small>
@@ -39,7 +44,7 @@
             </div>
         <?php endif; ?>
 
-            <table id="dataTable" class="table table-striped table-hover align-middle w-100">
+            <table id="dataTable" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>

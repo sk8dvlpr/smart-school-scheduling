@@ -5,18 +5,21 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <div>
-            <h5 class="mb-0 fw-bold">Data Timeslot per Hari</h5>
-            <?php if ($active_hari_id): ?>
-                <small class="text-muted"><span class="badge bg-primary"><?= $jp_count ?> JP</span> pada hari ini</small>
-            <?php endif; ?>
-        </div>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Data Timeslot per Hari</h1>
+        <p class="s3-page-desc">Atur slot jam pelajaran, istirahat, dan kegiatan khusus per hari.</p>
+        <?php if ($active_hari_id): ?>
+            <p class="s3-page-desc mb-0 mt-1"><span class="badge bg-primary"><?= $jp_count ?> JP</span> pada hari yang dipilih</p>
+        <?php endif; ?>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
         <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
             <i class="bi bi-plus-lg"></i> Tambah Timeslot
         </button>
     </div>
+</div>
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -42,7 +45,7 @@
             <?php endforeach; ?>
         </ul>
 
-        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
+        <table id="dataTable" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>

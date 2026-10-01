@@ -3,14 +3,28 @@
 <h2 class="h5 mb-3">Persyaratan sistem</h2>
 <ul class="list-group mb-4">
     <?php foreach ($checks as $check): ?>
+        <?php
+            $optional = ! empty($check['optional']);
+            $ok       = ! empty($check['ok']);
+            if ($ok) {
+                $badgeClass = 'bg-success';
+                $badgeText  = 'OK';
+            } elseif ($optional) {
+                $badgeClass = 'bg-warning text-dark';
+                $badgeText  = 'Opsional';
+            } else {
+                $badgeClass = 'bg-danger';
+                $badgeText  = 'Gagal';
+            }
+        ?>
         <li class="list-group-item d-flex justify-content-between align-items-center">
             <div>
                 <strong><?= esc($check['label']) ?></strong>
-                <?php if ($check['hint'] !== ''): ?>
+                <?php if (($check['hint'] ?? '') !== ''): ?>
                     <div class="small text-muted"><?= esc($check['hint']) ?></div>
                 <?php endif; ?>
             </div>
-            <span class="badge <?= $check['ok'] ? 'bg-success' : 'bg-danger' ?>"><?= $check['ok'] ? 'OK' : 'Gagal' ?></span>
+            <span class="badge <?= esc($badgeClass, 'attr') ?>"><?= esc($badgeText) ?></span>
         </li>
     <?php endforeach; ?>
 </ul>

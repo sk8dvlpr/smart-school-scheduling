@@ -3,6 +3,7 @@
 namespace App\Controllers\Guru;
 
 use App\Controllers\BaseController;
+use App\Libraries\HariIdValidator;
 use App\Models\GuruHariBlokirModel;
 use App\Models\HariModel;
 
@@ -46,6 +47,7 @@ class HariBlokirController extends BaseController
         if (! is_array($checked)) {
             $checked = [];
         }
+        $checked = HariIdValidator::filterExisting($checked);
 
         $blokirModel = new GuruHariBlokirModel();
         $blokirModel->where('guru_id', $guruId)->delete();
@@ -53,7 +55,7 @@ class HariBlokirController extends BaseController
         foreach ($checked as $hariId) {
             $blokirModel->insert([
                 'guru_id' => $guruId,
-                'hari_id' => (int) $hariId,
+                'hari_id' => $hariId,
             ]);
         }
 

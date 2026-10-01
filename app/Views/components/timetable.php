@@ -188,7 +188,7 @@ foreach ($hari as $h) {
                             <?php endif; ?>
                         <?php else: ?>
                             <?php if ($isExport): ?>
-                                <span class="tt-jp-num" style="font-size:7px;color:#818cf8;">★</span>
+                                <span class="tt-jp-num" style="font-size:7px;color:#E85D4C;">★</span>
                             <?php else: ?>
                                 <i class="bi bi-flag tt-icon-kegiatan"></i>
                             <?php endif; ?>
@@ -240,7 +240,7 @@ foreach ($hari as $h) {
 
                         <?php else:
                             $cell = $jadwalIndex[$hId][(int) $daySlot['id']] ?? null;
-                            $cellBg = $cell ? esc($cell['mapel_warna']) : '';
+                            $cellBg = $cell ? \App\Libraries\CssColor::hexOrEmpty($cell['mapel_warna'] ?? null) : '';
                         ?>
                             <td class="tt-td-cell<?= $span > 1 ? ' tt-td-merged' : '' ?><?= ($editable && $viewType === 'kelas') ? ' tt-td-editable' : '' ?>"<?= $rsAttr ?>>
                                 <?php if ($cell): ?>
@@ -252,7 +252,7 @@ foreach ($hari as $h) {
                                         }
                                     ?>
                                     <div class="<?= $subjectClasses ?>"
-                                        style="background-color:<?= $cellBg ?>;<?= $span > 1 ? '--tt-span:' . $span . ';' : '' ?>"
+                                        style="<?= $cellBg !== '' ? 'background-color:' . esc($cellBg, 'attr') . ';' : '' ?><?= $span > 1 ? '--tt-span:' . $span . ';' : '' ?>"
                                         title="<?= esc($cell['mapel_nama']) ?>"
                                         <?php if ($cellEditable): ?>
                                         data-jadwal-id="<?= (int) $cell['id'] ?>"

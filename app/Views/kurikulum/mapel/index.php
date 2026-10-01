@@ -5,13 +5,18 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold">Data Mata Pelajaran</h5>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Data Mata Pelajaran</h1>
+        <p class="s3-page-desc">Kelola mapel umum/kejuruan, JP default, dan warna label jadwal.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
         <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
             <i class="bi bi-plus-lg"></i> Tambah Data
         </button>
     </div>
+</div>
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -38,7 +43,7 @@
             </div>
         <?php endif; ?>
 
-        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
+        <table id="dataTable" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
@@ -114,7 +119,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Warna Label</label>
-                            <input type="color" class="form-control form-control-color w-100" name="warna" id="warna" value="#4F46E5" required>
+                            <input type="color" class="form-control form-control-color w-100" name="warna" id="warna" value="#0B1F3A" required>
                             <div class="form-text small">Untuk di jadwal.</div>
                         </div>
                     </div>
@@ -183,7 +188,7 @@
         $('#dataForm').attr('action', '<?= base_url('kurikulum/mapel') ?>');
         $('#modalTitle').text('Tambah Mata Pelajaran');
         $('#dataForm')[0].reset();
-        $('#warna').val('#4F46E5'); // reset default color
+        $('#warna').val('#0B1F3A'); // reset default color
         $('#jam_per_minggu').val(2);
         toggleJurusan('umum');
         modal.show();

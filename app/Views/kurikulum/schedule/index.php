@@ -1,16 +1,16 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h4 class="fw-bold"><i class="bi bi-cpu"></i> Generator Jadwal Otomatis (CSP + GA)</h4>
-        <p class="text-muted">Generate jadwal mata pelajaran menggunakan algoritma Constraint Satisfaction Problem dan Genetic Algorithm.</p>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title"><i class="bi bi-cpu"></i> Generator Jadwal Otomatis (CSP + GA)</h1>
+        <p class="s3-page-desc">Generate jadwal mata pelajaran menggunakan algoritma Constraint Satisfaction Problem dan Genetic Algorithm.</p>
     </div>
-    <div class="col-md-4 text-end">
-        <a href="<?= base_url('kurikulum/schedule/config') ?>" class="btn btn-outline-secondary me-2">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kurikulum/schedule/config') ?>" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-gear"></i> Konfigurasi
         </a>
-        <a href="<?= base_url('kurikulum/schedule/logs') ?>" class="btn btn-outline-info">
+        <a href="<?= base_url('kurikulum/schedule/logs') ?>" class="btn btn-outline-info btn-sm">
             <i class="bi bi-clock-history"></i> Riwayat
         </a>
     </div>
@@ -32,38 +32,53 @@
 
 <?php if (!$active_ta): ?>
     <div class="alert alert-warning">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i> Tidak ada Tahun Ajaran yang aktif. Silakan aktifkan di menu Master Data -> Tahun Ajaran.
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Generator belum siap: belum ada <strong>Tahun Ajaran aktif</strong>.
+        Buat dan aktifkan Tahun Ajaran di menu Master Data, lalu lengkapi Timeslot, Ruangan, Guru, Rombel, dan Mapel sebelum generate.
     </div>
 <?php else: ?>
+    <?php if (! empty($validation_error)): ?>
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-octagon me-2"></i><?= esc($validation_error) ?>
+        </div>
+    <?php endif; ?>
+    <?php if (empty($is_valid)): ?>
+        <div class="alert alert-warning">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            Data master belum lengkap untuk generate. Perbaiki item bertanda error pada panel pra-validasi di bawah, lalu kembali ke halaman ini.
+        </div>
+    <?php endif; ?>
     <div class="row">
         <!-- Pre-validation Panel -->
         <div class="col-md-6 mb-4">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">1. Pra-Validasi Data</h6>
-                </div>
+            <div class="card h-100">
                 <div class="card-body">
+                    <h6 class="fw-bold mb-2">1. Pra-Validasi Data</h6>
                     <p class="text-muted small mb-3">Sistem memeriksa kelengkapan master data sebelum proses generate dijalankan.</p>
                     
                     <ul class="list-group list-group-flush mb-3">
-                        <?php foreach ($validation as $v): ?>
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <?php foreach (($validation ?? []) as $v): ?>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 gap-3">
                                 <div>
                                     <span class="fw-medium d-block"><?= esc($v['rule']) ?></span>
                                     <small class="text-muted"><?= esc($v['message']) ?></small>
                                 </div>
                                 <?php if ($v['status']): ?>
-                                    <span class="badge bg-success rounded-pill"><i class="bi bi-check-lg"></i> Valid</span>
+                                    <span class="badge bg-success rounded-pill flex-shrink-0"><i class="bi bi-check-lg"></i> Siap</span>
                                 <?php else: ?>
-                                    <span class="badge bg-danger rounded-pill"><i class="bi bi-x-lg"></i> Error</span>
+                                    <span class="badge bg-warning rounded-pill flex-shrink-0"><i class="bi bi-exclamation-triangle"></i> Belum siap</span>
                                 <?php endif; ?>
                             </li>
                         <?php endforeach; ?>
                     </ul>
 
-                    <?php if (!$is_valid): ?>
-                        <div class="alert alert-danger mb-0 py-2">
-                            <i class="bi bi-x-circle me-1"></i> Lengkapi master data yang masih error sebelum generate.
+                    <?php if (empty($is_valid)): ?>
+                        <div class="alert alert-warning mb-0 py-2">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Lengkapi master data yang masih belum siap sebelum generate.
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-success mb-0 py-2">
+                            <i class="bi bi-check-circle me-1"></i> Semua pemeriksaan lulus. Anda dapat menjalankan generator.
                         </div>
                     <?php endif; ?>
                 </div>
@@ -72,15 +87,13 @@
 
         <!-- Generate Control Panel -->
         <div class="col-md-6 mb-4">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-white py-3">
-                    <h6 class="mb-0 fw-bold">2. Eksekusi Generator</h6>
-                </div>
+            <div class="card h-100">
                 <div class="card-body d-flex flex-column">
+                    <h6 class="fw-bold mb-3">2. Eksekusi Generator</h6>
                     <div class="mb-4">
                         <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">Status Jadwal Saat Ini</h6>
                         <?php if ($has_jadwal): ?>
-                            <div class="alert alert-success py-2 mb-2 d-flex justify-content-between align-items-center">
+                            <div class="alert alert-success py-2 mb-2 d-flex flex-wrap justify-content-between align-items-center gap-2">
                                 <span><i class="bi bi-check-circle-fill me-2"></i> Jadwal sudah digenerate</span>
                                 <a href="<?= base_url('kurikulum/schedule/result') ?>" class="btn btn-sm btn-success">Lihat Jadwal</a>
                             </div>
@@ -103,14 +116,14 @@
 
                     <div class="mt-auto">
                         <div id="generateProgressPanel" class="d-none mb-3">
-                            <div class="d-flex justify-content-between mb-1">
+                            <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
                                 <span class="small fw-bold text-primary" id="generateStatusText">Menunggu worker...</span>
                                 <span class="small text-muted" id="generateTimeText">00:00</span>
                             </div>
                             <div class="progress mb-2" style="height: 10px;">
                                 <div id="generateProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center small text-muted mb-2">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted mb-2">
                                 <span id="generateMetaText">—</span>
                                 <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnCancelJob">
                                     <i class="bi bi-x-circle"></i> Batalkan
@@ -149,12 +162,16 @@
                         </div>
                         <?php endif; ?>
 
-                        <button type="button" id="btnGenerate" class="btn btn-primary w-100 py-2 fw-bold" <?= (!$is_valid) ? 'disabled' : '' ?>>
+                        <button type="button" id="btnGenerate" class="btn btn-primary w-100 py-2 fw-bold" <?= (empty($is_valid)) ? 'disabled' : '' ?>>
                             <i class="bi bi-play-fill me-1"></i> Mulai Generate Jadwal Otomatis
                         </button>
                         
                         <div class="form-text text-muted mt-2 text-center small">
-                            Generate baru membuat <strong>history terpisah</strong> — history lama tidak dihapus. Publish manual setelah review.
+                            <?php if (empty($is_valid)): ?>
+                                Tombol generate terkunci sampai semua pra-validasi siap.
+                            <?php else: ?>
+                                Generate baru membuat <strong>history terpisah</strong> — history lama tidak dihapus. Publish manual setelah review.
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

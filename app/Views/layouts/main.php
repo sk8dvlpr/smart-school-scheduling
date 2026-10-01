@@ -11,23 +11,49 @@
     <?php else: ?>
         <link rel="icon" href="<?= base_url('imgs/logo-default.svg') ?>" type="image/svg+xml">
     <?php endif; ?>
-    
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
+
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('darkMode') === 'enabled') {
+                    document.documentElement.classList.add('dark-mode');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <link href="<?= base_url('vendor/bootstrap/css/bootstrap.min.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('vendor/bootstrap-icons/font/bootstrap-icons.min.css') ?>" rel="stylesheet">
     <link href="<?= base_url('css/style.css?v=' . filemtime(FCPATH . 'css/style.css')) ?>" rel="stylesheet">
-    
+
     <?= $this->renderSection('styles') ?>
 </head>
 <body>
+<script>
+    (function () {
+        try {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        } catch (e) {}
+    })();
+</script>
+
+    <?php
+    $role = session()->get('role');
+    $roleLabels = [
+        'kurikulum'      => 'Kurikulum',
+        'guru'           => 'Guru',
+        'kepala_sekolah' => 'Kepala Sekolah',
+    ];
+    $nama = (string) session()->get('nama');
+    $initial = $nama !== '' ? mb_strtoupper(mb_substr($nama, 0, 1)) : '?';
+    ?>
 
     <div class="wrapper">
-        <!-- Sidebar  -->
-        <nav id="sidebar">
+        <div class="s3-sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+        <nav id="sidebar" aria-label="Navigasi utama">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <div class="sidebar-logo-wrap">
@@ -38,18 +64,9 @@
             </div>
 
             <ul class="list-unstyled components">
-                <li class="px-3 mb-2">
-                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Menu</small>
+                <li>
+                    <span class="sidebar-section-label">Menu</span>
                 </li>
-
-                <?php
-                $role = session()->get('role');
-                $roleLabels = [
-                    'kurikulum'      => 'Kurikulum',
-                    'guru'           => 'Guru',
-                    'kepala_sekolah' => 'Kepala Sekolah',
-                ];
-                ?>
 
                 <?php if ($role === 'kurikulum'): ?>
                     <li class="<?= url_is('kurikulum/dashboard') ? 'active' : '' ?>">
@@ -58,8 +75,8 @@
                     <li class="<?= url_is('kurikulum/users*') ? 'active' : '' ?>">
                         <a href="<?= base_url('kurikulum/users') ?>"><i class="bi bi-people"></i> Manajemen User</a>
                     </li>
-                    <li class="px-3 mt-4 mb-2">
-                        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Master Data</small>
+                    <li>
+                        <span class="sidebar-section-label mt-3 d-block">Master Data</span>
                     </li>
                     <li class="<?= url_is('kurikulum/tahun-ajaran*') ? 'active' : '' ?>">
                         <a href="<?= base_url('kurikulum/tahun-ajaran') ?>"><i class="bi bi-calendar3"></i> Tahun Ajaran</a>
@@ -82,8 +99,8 @@
                     <li class="<?= url_is('kurikulum/timeslot*') ? 'active' : '' ?>">
                         <a href="<?= base_url('kurikulum/timeslot') ?>"><i class="bi bi-clock"></i> Timeslot</a>
                     </li>
-                    <li class="px-3 mt-4 mb-2">
-                        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Penjadwalan</small>
+                    <li>
+                        <span class="sidebar-section-label mt-3 d-block">Penjadwalan</span>
                     </li>
                     <li class="<?= url_is('kurikulum/schedule*') ? 'active' : '' ?>">
                         <a href="<?= base_url('kurikulum/schedule') ?>"><i class="bi bi-cpu"></i> Generator Jadwal</a>
@@ -94,12 +111,9 @@
                     </li>
                     <?php endif; ?>
                     <?php if (session()->get('guru_id')): ?>
-                        <li class="px-3 mt-4 mb-2">
-                            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Mengajar</small>
+                        <li>
+                            <span class="sidebar-section-label mt-3 d-block">Mengajar</span>
                         </li>
-                        <!-- <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
-                            <a href="<?= base_url('guru/preferensi') ?>"><i class="bi bi-sliders"></i> Preferensi Jadwal</a>
-                        </li> -->
                         <li class="<?= url_is('guru/hari-blokir*') ? 'active' : '' ?>">
                             <a href="<?= base_url('guru/hari-blokir') ?>"><i class="bi bi-calendar-x"></i> Hari Tidak Mengajar</a>
                         </li>
@@ -119,9 +133,6 @@
                     <li class="<?= url_is('guru/jadwal*') ? 'active' : '' ?>">
                         <a href="<?= base_url('guru/jadwal') ?>"><i class="bi bi-calendar-week"></i> Jadwal Mengajar</a>
                     </li>
-                    <!-- <li class="<?= url_is('guru/preferensi*') ? 'active' : '' ?>">
-                        <a href="<?= base_url('guru/preferensi') ?>"><i class="bi bi-sliders"></i> Preferensi Jadwal</a>
-                    </li> -->
                     <li class="<?= url_is('guru/hari-blokir*') ? 'active' : '' ?>">
                         <a href="<?= base_url('guru/hari-blokir') ?>"><i class="bi bi-calendar-x"></i> Hari Tidak Mengajar</a>
                     </li>
@@ -147,33 +158,30 @@
             </ul>
         </nav>
 
-        <!-- Page Content  -->
         <div id="content">
-            <nav class="navbar navbar-expand-lg navbar-light">
-                <div class="container-fluid">
-                    <button type="button" id="sidebarCollapse" class="btn btn-light d-lg-none">
+            <header class="s3-topbar">
+                <div class="d-flex align-items-center gap-2 w-100">
+                    <button type="button" id="sidebarCollapse" class="s3-icon-btn d-lg-none" aria-label="Buka menu">
                         <i class="bi bi-list"></i>
                     </button>
-                    
-                    <div class="d-none d-lg-block fw-semibold text-muted">
-                        <?= $title ?? 'S3 Dashboard' ?>
+
+                    <div class="s3-topbar-title flex-grow-1 text-truncate">
+                        <?= esc($title ?? 'Dashboard') ?>
                     </div>
 
-                    <div class="ms-auto d-flex align-items-center">
-                        <button class="btn btn-link text-dark me-3" id="darkModeToggle">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="s3-icon-btn" id="darkModeToggle" aria-label="Mode gelap">
                             <i class="bi bi-moon"></i>
                         </button>
-                        
+
                         <div class="dropdown">
-                            <a class="text-decoration-none text-dark dropdown-toggle d-flex align-items-center" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <div class="bg-primary-custom text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                    <?= substr(session()->get('nama'), 0, 1) ?>
-                                </div>
-                                <span class="fw-medium d-none d-md-inline"><?= session()->get('nama') ?></span>
+                            <a class="s3-user-toggle dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="s3-avatar"><?= esc($initial) ?></span>
+                                <span class="fw-semibold d-none d-md-inline" style="font-size: 0.9rem;"><?= esc($nama) ?></span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userDropdown">
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li>
-                                    <div class="dropdown-item-text">
+                                    <div class="dropdown-item-text px-3 py-2">
                                         <small class="text-muted d-block">Role</small>
                                         <span class="fw-bold"><?= esc($roleLabels[$role] ?? $role) ?></span>
                                     </div>
@@ -189,20 +197,17 @@
                         </div>
                     </div>
                 </div>
-            </nav>
+            </header>
 
-            <div class="p-4 pb-5">
+            <div class="s3-main">
                 <?= $this->renderSection('content') ?>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery (Needed for DataTables later) -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="<?= base_url('vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= base_url('vendor/jquery/jquery.min.js') ?>"></script>
     <script>
-        // ponytail: CSRF cookie is HttpOnly — JS reads meta tag, not document.cookie
         (function () {
             window.s3CsrfToken = function () {
                 const meta = document.getElementById('csrf-token');
@@ -250,32 +255,58 @@
             });
         })();
     </script>
-    
+
     <script>
         $(document).ready(function () {
-            // Sidebar Toggle
+            const $sidebar = $('#sidebar');
+            const $backdrop = $('#sidebarBackdrop');
+
+            function closeSidebar() {
+                $sidebar.removeClass('active');
+                $backdrop.removeClass('show').attr('aria-hidden', 'true');
+                $('body').css('overflow', '');
+            }
+
+            function openSidebar() {
+                $sidebar.addClass('active');
+                $backdrop.addClass('show').attr('aria-hidden', 'false');
+                $('body').css('overflow', 'hidden');
+            }
+
             $('#sidebarCollapse').on('click', function () {
-                $('#sidebar').toggleClass('active');
+                if ($sidebar.hasClass('active')) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
             });
-            
-            // Dark Mode Toggle
+
+            $backdrop.on('click', closeSidebar);
+
+            $(window).on('resize', function () {
+                if (window.innerWidth >= 992) {
+                    closeSidebar();
+                }
+            });
+
             const toggleBtn = $('#darkModeToggle');
             const icon = toggleBtn.find('i');
-            
-            // Check LocalStorage
-            if (localStorage.getItem('darkMode') === 'enabled') {
+
+            if ($('body').hasClass('dark-mode') || document.documentElement.classList.contains('dark-mode')) {
                 $('body').addClass('dark-mode');
+                document.documentElement.classList.add('dark-mode');
                 icon.removeClass('bi-moon').addClass('bi-sun');
             }
-            
-            toggleBtn.on('click', function() {
+
+            toggleBtn.on('click', function () {
                 $('body').toggleClass('dark-mode');
-                
+                document.documentElement.classList.toggle('dark-mode');
+
                 if ($('body').hasClass('dark-mode')) {
                     localStorage.setItem('darkMode', 'enabled');
                     icon.removeClass('bi-moon').addClass('bi-sun');
                 } else {
-                    localStorage.setItem('darkMode', null);
+                    localStorage.setItem('darkMode', 'disabled');
                     icon.removeClass('bi-sun').addClass('bi-moon');
                 }
             });
@@ -286,7 +317,7 @@
             });
         });
     </script>
-    
+
     <?= $this->renderSection('scripts') ?>
 </body>
 </html>

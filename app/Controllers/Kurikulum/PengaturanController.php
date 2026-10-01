@@ -4,6 +4,7 @@ namespace App\Controllers\Kurikulum;
 
 use App\Controllers\BaseController;
 use App\Libraries\BrandingService;
+use App\Libraries\SafeImageUpload;
 use App\Libraries\SettingsService;
 use App\Models\AppSettingModel;
 
@@ -75,13 +76,20 @@ class PengaturanController extends BaseController
         ];
 
         if ($file && $file->isValid() && ! $file->hasMoved()) {
+            $ext = SafeImageUpload::resolveExtension($file->guessExtension());
+            if ($ext === null) {
+                return redirect()->back()->withInput()->with(
+                    'error',
+                    'Format logo tidak didukung. Gunakan PNG, JPG, atau WebP.',
+                );
+            }
+
             $dir = FCPATH . 'uploads/branding';
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
 
-            $ext     = $file->getExtension() ?: 'png';
-            $newName = 'logo_' . time() . '.' . strtolower($ext);
+            $newName = 'logo_' . time() . '.' . $ext;
             $file->move($dir, $newName);
 
             $old = $settings['logo_path'] ?? null;

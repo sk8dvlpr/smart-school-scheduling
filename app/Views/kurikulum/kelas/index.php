@@ -5,13 +5,18 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold">Data Rombel</h5>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Data Rombel</h1>
+        <p class="s3-page-desc">Kelola rombongan belajar, homeroom, dan alokasi JP kurikulum.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
         <button type="button" class="btn btn-primary btn-sm" onclick="openModal()">
             <i class="bi bi-plus-lg"></i> Tambah Data
         </button>
     </div>
+</div>
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -73,7 +78,7 @@
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-4 d-flex gap-2">
+            <div class="col-md-4 d-flex flex-wrap gap-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-funnel"></i> Terapkan
                 </button>
@@ -83,7 +88,7 @@
             </div>
         </form>
 
-        <table id="dataTable" class="table table-striped table-hover align-middle w-100">
+        <table id="dataTable" class="table table-hover align-middle w-100">
                 <thead>
                     <tr>
                         <th width="5%">No</th>

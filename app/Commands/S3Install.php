@@ -30,7 +30,7 @@ class S3Install extends BaseCommand
     {
         $installer = new InstallerService();
         if ($installer->isInstalled()) {
-            CLI::error('Already installed (writable/installed.lock exists).');
+            CLI::error('Already installed (installed.lock or installer.enabled=false).');
 
             return EXIT_ERROR;
         }

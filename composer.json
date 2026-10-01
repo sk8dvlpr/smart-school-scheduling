@@ -1,13 +1,11 @@
 {
-    "name": "codeigniter4/appstarter",
-    "description": "CodeIgniter4 starter app",
+    "name": "sk8dvlpr/smart-school-scheduling",
+    "description": "Smart School Scheduling (S3) — CSP+GA timetable generator for SMK (CodeIgniter 4)",
     "license": "MIT",
     "type": "project",
-    "homepage": "https://codeigniter.com",
+    "homepage": "https://github.com/sk8dvlpr/smart-school-scheduling",
     "support": {
-        "forum": "https://forum.codeigniter.com/",
-        "source": "https://github.com/codeigniter4/CodeIgniter4",
-        "slack": "https://codeigniterchat.slack.com"
+        "source": "https://github.com/sk8dvlpr/smart-school-scheduling"
     },
     "require": {
         "php": "^8.2",

@@ -51,8 +51,8 @@ class InstallController extends BaseController
     {
         $checks = $this->runRequirementChecks();
         foreach ($checks as $check) {
-            if (! $check['ok']) {
-                return redirect()->back()->with('error', 'Masih ada persyaratan yang belum terpenuhi.');
+            if (! $check['ok'] && empty($check['optional'])) {
+                return redirect()->back()->with('error', 'Masih ada persyaratan wajib yang belum terpenuhi.');
             }
         }
 
@@ -253,7 +253,9 @@ class InstallController extends BaseController
             $this->installer->createAdmin($wizard['admin']);
             $this->installer->writeLock();
 
+            // Drop plaintext admin password from session immediately after success.
             session()->remove('install');
+            session()->regenerate(true);
             session()->set('install_just_finished', true);
 
             return redirect()->to('/install/finish')
@@ -266,7 +268,7 @@ class InstallController extends BaseController
     }
 
     /**
-     * @return list<array{label: string, ok: bool, hint: string}>
+     * @return list<array{label: string, ok: bool, hint: string, optional?: bool}>
      */
     private function runRequirementChecks(): array
     {
@@ -292,6 +294,18 @@ class InstallController extends BaseController
                 'label' => 'Ekstensi mysqli',
                 'ok'    => $ext('mysqli'),
                 'hint'  => 'Koneksi MySQL/MariaDB',
+            ],
+            [
+                'label'    => 'Ekstensi gd atau imagick (ekspor PDF/gambar)',
+                'ok'       => $ext('gd') || $ext('imagick'),
+                'hint'     => 'Disarankan untuk DomPDF / logo',
+                'optional' => true,
+            ],
+            [
+                'label'    => 'Ekstensi zip (ekspor Excel)',
+                'ok'       => $ext('zip'),
+                'hint'     => 'Disarankan untuk PhpSpreadsheet',
+                'optional' => true,
             ],
             [
                 'label' => 'Folder writable dapat ditulis',

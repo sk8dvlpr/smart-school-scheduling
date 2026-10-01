@@ -6,7 +6,8 @@ use App\Libraries\InstallerService;
 use CodeIgniter\Database\Seeder;
 
 /**
- * Template kosong: hari Senin–Sabtu + timeslot dasar (bukan data sekolah spesifik).
+ * Template kosong: hanya daftar hari Senin–Sabtu.
+ * Timeslot, ruangan, dan master data lain diisi lewat UI / wizard.
  */
 class EmptyTemplateSeeder extends Seeder
 {

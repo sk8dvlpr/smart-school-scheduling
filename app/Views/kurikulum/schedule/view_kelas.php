@@ -1,4 +1,4 @@
-<h5 class="fw-bold mb-3">Jadwal Rombel: <?= esc($kelas['nama']) ?></h5>
+<h5 class="fw-bold mb-3 s3-page-title" style="font-size:1.15rem;">Jadwal Rombel: <?= esc($kelas['nama']) ?></h5>
 
 <?php $editable = $editable ?? true; ?>
 <?php if ($editable): ?>

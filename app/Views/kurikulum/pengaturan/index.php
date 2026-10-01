@@ -1,11 +1,13 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="card">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold">Pengaturan Aplikasi</h5>
-        <small class="text-muted">Nama sekolah dan logo ditampilkan di login, menu, favicon, dan export PDF.</small>
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Pengaturan Aplikasi</h1>
+        <p class="s3-page-desc">Nama sekolah dan logo ditampilkan di login, menu, favicon, dan export PDF.</p>
     </div>
+</div>
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -40,7 +42,9 @@
                         <label class="form-check-label" for="hapus_logo">Hapus logo saat ini</label>
                     </div>
                 <?php endif; ?>
-                <input type="file" class="form-control" id="logo" name="logo" accept="image/jpeg,image/png,image/webp">
+                <div class="s3-file-input">
+                    <input type="file" class="form-control" id="logo" name="logo" accept="image/jpeg,image/png,image/webp">
+                </div>
                 <div class="form-text">JPG, PNG, atau WebP. Maks. 2 MB.</div>
             </div>
 

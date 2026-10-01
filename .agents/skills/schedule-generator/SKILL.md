@@ -1,6 +1,6 @@
 ---
 name: schedule-generator
-description: Implement S3 v3.1 scheduling — CSP + GA with kelas_mapel units (1 JP each), automatic guru assignment from guru_mapel, per-day timeslots, HC-1..HC-8, SC-1..SC-11 weighted (SC-7 skipped). ScheduleGenerator orchestrator, CSPEngine (AC-3 + backtracking + MRV/LCV), GAEngine (tournament/OX/elitism/adaptive mutation), pre-validation, jadwal storage with kelas_mapel_id.
+description: Implement S3 v3.1 scheduling — CSP + GA with kelas_mapel units (1 JP each), automatic guru assignment from guru_mapel, per-day timeslots, HC-1..HC-8, SC-1..SC-12 weighted (SC-7 via guru_preferensi). ScheduleGenerator orchestrator, CSPEngine (AC-3 + backtracking + MRV/LCV), GAEngine (tournament/OX/elitism/adaptive mutation), pre-validation, jadwal storage with kelas_mapel_id.
 ---
 
 # Schedule Generator — CSP + GA (v3.1)
@@ -14,7 +14,7 @@ ScheduleGenerator
 ├── validate()     → 10 pre-checks including guru_hari_blokir capacity
 ├── generate()     → CSP → GA → save jadwal
 ├── CSPEngine      → AC-3 + backtracking + forward checking (MRV/LCV) + min-conflict repair
-└── GAEngine       → optimize SC-1..SC-11, repair HC-1..HC-8
+└── GAEngine       → optimize SC-1..SC-12, repair HC-1..HC-8
 SchedulingContext  → shared helpers (JP slots, guru pool, eligibility)
 ```
 
@@ -68,7 +68,7 @@ Eligible `guru_id` from `guru_mapel` WHERE:
 
 **Dropped in v3.1**: practical block rule (old HC-8) — same mapel may span istirahat; `blok_group` is UI-only merge metadata.
 
-## Soft Constraints SC-1..SC-11 (GA only, weights 1–10)
+## Soft Constraints SC-1..SC-12 (GA only, weights 1–10)
 
 | SC | Weight | Rule | Penalty (normalized 0–1) |
 |----|--------|------|--------------------------|
@@ -78,11 +78,12 @@ Eligible `guru_id` from `guru_mapel` WHERE:
 | SC-4 | 6 | Mapel berat pagi | high `bobot_kognitif` placed in late slots |
 | SC-5 | 5 | Mapel ringan sore | low `bobot_kognitif` placed in early slots |
 | SC-6 | 7 | Beban guru seimbang | variance of guru JP across days |
-| SC-7 | — | Preferensi guru | **NOT implemented** (needs `guru_preferensi`) |
+| SC-7 | 5 | Preferensi guru | `guru_preferensi` prefer/hindari hari/slot (`sc7_teacher_preference`) |
 | SC-8 | 5 | Minim perpindahan ruang | lab room transitions per class |
 | SC-9 | 4 | Kontinuitas guru | delayed guru lock: attempt 1 bebas pilih guru, lock dari attempt 2+; mixed-guru diminimalkan GA via penalty |
 | SC-10 | 3 | Rotasi mapel jam pertama | repeated first-slot mapel across days |
 | SC-11 | 6 | Load balance lab antar jurusan | variance of lab usage across days per jurusan |
+| SC-12 | 7 | Pack lab paralel se-tingkat | `sc_lab_day_pack` |
 
 **Fitness**: `1 / (1 + Σ(Wi × Penalty_i_normalized))`
 

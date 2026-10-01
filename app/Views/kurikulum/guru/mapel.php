@@ -1,19 +1,21 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('content') ?>
-<div class="mb-3">
-    <a href="<?= base_url('kurikulum/guru') ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
-</div>
-
-<div class="card">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0 fw-bold">Kompetensi Mapel — <?= esc($guru['nama']) ?></h5>
-        <small class="text-muted">
+<div class="s3-page-header">
+    <div>
+        <h1 class="s3-page-title">Kompetensi Mapel — <?= esc($guru['nama']) ?></h1>
+        <p class="s3-page-desc">
             Email: <?= esc($guru['email']) ?>
             <?php if (! empty($guru['nip'])): ?> | NIP: <?= esc($guru['nip']) ?><?php endif; ?>
             | Total cap: <strong><?= $total_cap ?> JP/minggu</strong>
-        </small>
+        </p>
     </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="<?= base_url('kurikulum/guru') ?>" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+    </div>
+</div>
+
+<div class="card">
     <div class="card-body">
         <?php if (session()->getFlashdata('success')): ?>
             <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
@@ -43,7 +45,7 @@
         </form>
 
         <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-hover align-middle">
                 <thead>
                     <tr>
                         <th>Mapel</th>
