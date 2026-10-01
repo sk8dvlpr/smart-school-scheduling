@@ -23,24 +23,37 @@ jobs:
           tools: composer:v2
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress --no-dev --optimize-autoloader
+        run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: PHPUnit (dev deps for tests)
-        run: |
-          composer install --no-interaction --prefer-dist --no-progress
-          vendor/bin/phpunit --configuration phpunit.dist.xml --no-coverage
+      - name: PHPUnit
+        env:
+          XDEBUG_MODE: off
+        run: vendor/bin/phpunit --configuration phpunit.dist.xml --no-coverage
 
       - name: Build release zip
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           bash scripts/build-release.sh "$VERSION"
+          ls -lh "build/smart-school-scheduling-${VERSION}.zip"
           echo "ASSET=build/smart-school-scheduling-${VERSION}.zip" >> "$GITHUB_ENV"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Smart School Scheduling ${{ github.ref_name }}
-          body_path: CHANGELOG.md
+          body: |
+            ## Smart School Scheduling ${{ github.ref_name }}
+
+            Production-ready distribution package for SMK timetable generation (CSP + GA).
+
+            ### Install
+            1. Extract the zip on the server
+            2. Run `composer install --no-dev --optimize-autoloader`
+            3. Point the web server document root to `public/`
+            4. Open `/install` and complete the wizard
+
+            See `CHANGELOG.md` and `README.md` for details.
+            **Breaking:** existing databases from the old migration chain must reinstall (wipe + migrate).
           files: ${{ env.ASSET }}
           draft: false
           generate_release_notes: true
